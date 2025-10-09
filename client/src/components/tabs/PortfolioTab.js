@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, Plus, Minus } from 'lucide-react';
 import TabContainer from '../TabContainer';
-import { portfolioAPI, stocksAPI } from '../../services/api';
+import { stocksAPI } from '../../services/api';
+import { portfolioService } from '../../services/portfolioService';
 
 function PortfolioTab({ userId, subscribe, onClose }) {
   const [portfolio, setPortfolio] = useState({ holdings: [], transactions: [], cash: 100000 });
@@ -10,11 +11,11 @@ function PortfolioTab({ userId, subscribe, onClose }) {
   const [tradeForm, setTradeForm] = useState({ symbol: '', quantity: '', type: 'buy' });
   const [currentPrices, setCurrentPrices] = useState({});
 
-  const loadPortfolio = useCallback(async () => {
+  const loadPortfolio = useCallback(() => {
     setLoading(true);
     try {
-      const res = await portfolioAPI.get(userId);
-      setPortfolio(res.data.data || { holdings: [], transactions: [], cash: 100000 });
+      const data = portfolioService.get(userId);
+      setPortfolio(data);
     } catch (error) {
       console.error('Error loading portfolio:', error);
     } finally {
@@ -87,15 +88,15 @@ function PortfolioTab({ userId, subscribe, onClose }) {
         timestamp: new Date().toISOString(),
       };
 
-      await portfolioAPI.trade(userId, tradeData);
+      portfolioService.trade(userId, tradeData);
 
-      await loadPortfolio();
+      loadPortfolio();
       setShowTrade(false);
       setTradeForm({ symbol: '', quantity: '', type: 'buy' });
       alert(`Successfully ${type === 'buy' ? 'bought' : 'sold'} ${quantity} shares of ${symbol.toUpperCase()}`);
     } catch (error) {
       console.error('Trade error:', error);
-      alert(error.response?.data?.error || 'Trade failed. Please try again.');
+      alert(error.message || 'Trade failed. Please try again.');
     }
   };
 

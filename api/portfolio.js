@@ -1,20 +1,34 @@
 const admin = require('firebase-admin');
 
-if (!admin.apps.length) {
+let db;
+
+function initializeFirebase() {
+  if (admin.apps.length) {
+    return admin.firestore();
+  }
+
   try {
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    
+    if (!privateKey || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PROJECT_ID) {
+      throw new Error('Missing Firebase credentials');
+    }
+
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-      })
+        privateKey: privateKey.replace(/\\n/g, '\n')
+      }),
+      databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
     });
+    
+    return admin.firestore();
   } catch (error) {
     console.error('Firebase admin init error:', error);
+    throw error;
   }
 }
-
-const db = admin.firestore();
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -33,6 +47,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    db = initializeFirebase();
     const portfolioRef = db.collection('portfolios').doc(userId);
 
     if (req.method === 'GET') {
