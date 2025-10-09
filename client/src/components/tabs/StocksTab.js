@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Search, Star } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, Search } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import StockChart from '../StockChart';
 import { stocksAPI } from '../../services/api';
@@ -21,17 +21,7 @@ function StocksTab({ subscribe, onClose }) {
     }
   }, [selectedSymbol, subscribe]);
 
-  useEffect(() => {
-    if (selectedSymbol) {
-      loadStockData(selectedSymbol);
-    }
-  }, [selectedSymbol]);
-
-  useEffect(() => {
-    loadPopularStocks();
-  }, []);
-
-  const loadStockData = async (symbol) => {
+  const loadStockData = useCallback(async (symbol) => {
     setLoading(true);
     try {
       const [quoteRes, profileRes] = await Promise.all([
@@ -45,16 +35,26 @@ function StocksTab({ subscribe, onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadPopularStocks = async () => {
+  const loadPopularStocks = useCallback(async () => {
     try {
       const res = await stocksAPI.getPopular();
       setPopularStocks(res.data.data || []);
     } catch (error) {
       console.error('Error loading popular stocks:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (selectedSymbol) {
+      loadStockData(selectedSymbol);
+    }
+  }, [selectedSymbol, loadStockData]);
+
+  useEffect(() => {
+    loadPopularStocks();
+  }, [loadPopularStocks]);
 
   const handleSearch = async (e) => {
     e.preventDefault();

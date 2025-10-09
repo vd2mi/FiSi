@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Bitcoin, TrendingUp, TrendingDown, Search } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Bitcoin, Search } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import CryptoChart from '../CryptoChart';
 import { cryptoAPI } from '../../services/api';
@@ -20,26 +20,16 @@ function CryptoTab({ subscribe, onClose }) {
     }
   }, [selectedCoin, subscribe]);
 
-  useEffect(() => {
-    loadTopCryptos();
-  }, []);
-
-  useEffect(() => {
-    if (selectedCoin) {
-      loadCoinDetails();
-    }
-  }, [selectedCoin]);
-
-  const loadTopCryptos = async () => {
+  const loadTopCryptos = useCallback(async () => {
     try {
       const res = await cryptoAPI.getTop(50);
       setCryptoList(res.data.data || []);
     } catch (error) {
       console.error('Error loading cryptos:', error);
     }
-  };
+  }, []);
 
-  const loadCoinDetails = async () => {
+  const loadCoinDetails = useCallback(async () => {
     setLoading(true);
     try {
       const res = await cryptoAPI.getDetails(selectedCoin.id);
@@ -49,7 +39,17 @@ function CryptoTab({ subscribe, onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCoin.id]);
+
+  useEffect(() => {
+    loadTopCryptos();
+  }, [loadTopCryptos]);
+
+  useEffect(() => {
+    if (selectedCoin) {
+      loadCoinDetails();
+    }
+  }, [selectedCoin, loadCoinDetails]);
 
   const handleSearch = (e) => {
     e.preventDefault();

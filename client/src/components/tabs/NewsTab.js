@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Newspaper, ExternalLink } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import { newsAPI } from '../../services/api';
@@ -8,11 +8,7 @@ function NewsTab({ onClose }) {
   const [category, setCategory] = useState('general');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadNews();
-  }, [category]);
-
-  const loadNews = async () => {
+  const loadNews = useCallback(async () => {
     setLoading(true);
     try {
       const res = await newsAPI.getMarket(category);
@@ -22,7 +18,11 @@ function NewsTab({ onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [category]);
+
+  useEffect(() => {
+    loadNews();
+  }, [loadNews]);
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp * 1000);

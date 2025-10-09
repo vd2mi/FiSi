@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Plus, Minus } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { DollarSign, Plus, Minus } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import { portfolioAPI, stocksAPI } from '../../services/api';
 
@@ -10,9 +10,21 @@ function PortfolioTab({ userId, subscribe, onClose }) {
   const [tradeForm, setTradeForm] = useState({ symbol: '', quantity: '', type: 'buy' });
   const [currentPrices, setCurrentPrices] = useState({});
 
+  const loadPortfolio = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await portfolioAPI.get(userId);
+      setPortfolio(res.data.data || { holdings: [], transactions: [], cash: 100000 });
+    } catch (error) {
+      console.error('Error loading portfolio:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
   useEffect(() => {
     loadPortfolio();
-  }, [userId]);
+  }, [loadPortfolio]);
 
   useEffect(() => {
     if (portfolio.holdings.length > 0) {
@@ -34,18 +46,6 @@ function PortfolioTab({ userId, subscribe, onClose }) {
       };
     }
   }, [portfolio.holdings, subscribe]);
-
-  const loadPortfolio = async () => {
-    setLoading(true);
-    try {
-      const res = await portfolioAPI.get(userId);
-      setPortfolio(res.data.data || { holdings: [], transactions: [], cash: 100000 });
-    } catch (error) {
-      console.error('Error loading portfolio:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadCurrentPrice = async (symbol) => {
     try {

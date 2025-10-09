@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, Search } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import { optionsAPI } from '../../services/api';
@@ -12,17 +12,7 @@ function OptionsTab({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [hoveredOption, setHoveredOption] = useState(null);
 
-  useEffect(() => {
-    loadExpirations();
-  }, [symbol]);
-
-  useEffect(() => {
-    if (selectedExpiration) {
-      loadOptionChain();
-    }
-  }, [symbol, selectedExpiration]);
-
-  const loadExpirations = async () => {
+  const loadExpirations = useCallback(async () => {
     try {
       const res = await optionsAPI.getExpirations(symbol);
       const exps = res.data.data || [];
@@ -33,9 +23,9 @@ function OptionsTab({ onClose }) {
     } catch (error) {
       console.error('Error loading expirations:', error);
     }
-  };
+  }, [symbol]);
 
-  const loadOptionChain = async () => {
+  const loadOptionChain = useCallback(async () => {
     setLoading(true);
     try {
       const res = await optionsAPI.getChain(symbol, selectedExpiration);
@@ -45,7 +35,17 @@ function OptionsTab({ onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [symbol, selectedExpiration]);
+
+  useEffect(() => {
+    loadExpirations();
+  }, [loadExpirations]);
+
+  useEffect(() => {
+    if (selectedExpiration) {
+      loadOptionChain();
+    }
+  }, [selectedExpiration, loadOptionChain]);
 
   const handleSearch = (e) => {
     e.preventDefault();

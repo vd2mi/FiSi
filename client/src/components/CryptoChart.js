@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { cryptoAPI } from '../services/api';
 
@@ -7,13 +7,7 @@ function CryptoChart({ coinId }) {
   const [timeframe, setTimeframe] = useState(7);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (coinId) {
-      loadChartData();
-    }
-  }, [coinId, timeframe]);
-
-  const loadChartData = async () => {
+  const loadChartData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await cryptoAPI.getChart(coinId, timeframe);
@@ -50,7 +44,13 @@ function CryptoChart({ coinId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [coinId, timeframe]);
+
+  useEffect(() => {
+    if (coinId) {
+      loadChartData();
+    }
+  }, [coinId, loadChartData]);
 
   const formatXAxis = (timestamp) => {
     const date = new Date(timestamp);

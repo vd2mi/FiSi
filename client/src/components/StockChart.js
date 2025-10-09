@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { stocksAPI } from '../services/api';
 
@@ -7,13 +7,7 @@ function StockChart({ symbol }) {
   const [timeframe, setTimeframe] = useState('1D');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (symbol) {
-      loadChartData();
-    }
-  }, [symbol, timeframe]);
-
-  const loadChartData = async () => {
+  const loadChartData = useCallback(async () => {
     setLoading(true);
     try {
       const now = Math.floor(Date.now() / 1000);
@@ -50,7 +44,13 @@ function StockChart({ symbol }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [symbol, timeframe]);
+
+  useEffect(() => {
+    if (symbol) {
+      loadChartData();
+    }
+  }, [symbol, loadChartData]);
 
   const formatXAxis = (timestamp) => {
     const date = new Date(timestamp);

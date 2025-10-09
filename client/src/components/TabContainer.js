@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Maximize2, Minimize2, GripHorizontal } from 'lucide-react';
+import { X, GripHorizontal } from 'lucide-react';
 
 function TabContainer({ title, icon: Icon, onClose, children, actions }) {
   return (
