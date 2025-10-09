@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:3001';
+const WS_URL = process.env.REACT_APP_WS_URL;
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -10,7 +10,7 @@ export function useWebSocket() {
   const listenersRef = useRef(new Map());
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    if (!WS_URL || wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
 
@@ -50,9 +50,11 @@ export function useWebSocket() {
       ws.onclose = () => {
         setIsConnected(false);
         
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
-        }, 5000);
+        if (WS_URL) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, 10000);
+        }
       };
 
       ws.onerror = () => {
@@ -76,6 +78,10 @@ export function useWebSocket() {
   }, []);
 
   const subscribe = useCallback((channel, symbol, callback) => {
+    if (!WS_URL) {
+      return () => {};
+    }
+
     const key = `${channel}:${symbol}`;
     
     if (!listenersRef.current.has(key)) {
@@ -108,7 +114,9 @@ export function useWebSocket() {
   }, []);
 
   useEffect(() => {
-    connect();
+    if (WS_URL) {
+      connect();
+    }
     return () => disconnect();
   }, [connect, disconnect]);
 
