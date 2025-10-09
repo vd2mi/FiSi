@@ -16,7 +16,6 @@ function StocksTab({ subscribe, onClose }) {
     if (selectedSymbol) {
       const unsubscribe = subscribe('stock', selectedSymbol, (data) => {
         setStockData(prev => ({ ...prev, ...data }));
-        console.log(`Price update for ${selectedSymbol}:`, data.c);
       });
       return unsubscribe;
     }

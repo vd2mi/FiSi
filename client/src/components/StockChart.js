@@ -27,11 +27,8 @@ function StockChart({ symbol }) {
 
       const { from, resolution } = timeframes[timeframe] || timeframes['1D'];
       
-      console.log(`Loading chart for ${symbol}, timeframe: ${timeframe}`);
       const res = await stocksAPI.getCandles(symbol, { resolution, from, to: now });
       const data = res.data.data;
-
-      console.log('Chart data received:', data);
 
       if (data && data.t && data.c && data.s === 'ok') {
         const formatted = data.t.map((timestamp, i) => ({
@@ -42,16 +39,12 @@ function StockChart({ symbol }) {
           close: data.c[i],
           range: [data.l[i], data.h[i]],
         }));
-        console.log(`Chart has ${formatted.length} data points`);
         setChartData(formatted);
       } else {
-        console.warn('No valid chart data:', data);
         setChartData([]);
       }
     } catch (error) {
-      console.error('Error loading chart data:', error);
       if (error.response?.status === 403) {
-        console.warn('Chart data requires Finnhub paid plan');
       }
       setChartData([]);
     } finally {
@@ -91,7 +84,7 @@ function StockChart({ symbol }) {
 
     const { open, close, high, low } = data;
     const isGreen = close >= open;
-    const color = isGreen ? '#10b981' : '#ef4444';
+    const color = isGreen ? '#00ff41' : '#ff0055';
     
     const maxPrice = Math.max(open, close);
     const minPrice = Math.min(open, close);

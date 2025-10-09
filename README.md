@@ -1,11 +1,14 @@
 # Fi-Si Financial Terminal
 
-A modern, real-time financial terminal web application with support for stocks, options, cryptocurrency, portfolio management, and financial news. Built with React and deployed on Vercel with serverless functions.
+⚡ **MATRIX-STYLE** real-time financial terminal with PITCH BLACK background and NEON GREEN styling.
 
-![Fi-Si Terminal](https://img.shields.io/badge/version-1.0.0-purple.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+Track stocks, options, crypto, manage your portfolio, and stay updated with financial news.
 
-> ⚠️ **Demo Application**: This is a portfolio simulation tool for educational purposes. Not for real trading.
+![Fi-Si Terminal](https://img.shields.io/badge/version-1.0.0-00ff41.svg)
+![License](https://img.shields.io/badge/license-MIT-00ff41.svg)
+![Style](https://img.shields.io/badge/style-MATRIX-00ff41.svg)
+
+> ⚠️ **Educational Tool**: Portfolio simulation only. Not for actual trading.
 
 ## Features
 

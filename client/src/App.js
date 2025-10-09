@@ -122,7 +122,7 @@ function App() {
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-terminal-bg">
-        <div className="text-terminal-accent text-xl font-mono">Loading...</div>
+        <div className="text-terminal-accent text-xl font-mono neon-text">&gt;&gt; INITIALIZING...</div>
       </div>
     );
   }

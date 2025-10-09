@@ -235,8 +235,8 @@ function Auth({ onLogin }) {
       <div className="w-full max-w-md">
         <div className="bg-terminal-panel border border-terminal-border rounded-lg p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-terminal-accent mb-2 font-mono">Fi‑Si</h1>
-            <p className="text-terminal-muted">Financial Terminal</p>
+            <h1 className="text-4xl font-bold text-terminal-accent mb-2 font-mono neon-text">Fi‑Si</h1>
+            <p className="text-terminal-text font-mono">[ SECURE ACCESS TERMINAL ]</p>
           </div>
 
           <div className="flex gap-2 mb-6">
@@ -393,8 +393,8 @@ function Auth({ onLogin }) {
           )}
 
           <div className="mt-6 pt-6 border-t border-terminal-border">
-            <p className="text-xs text-terminal-muted text-center">
-              Real-time stock, crypto, and options data
+            <p className="text-xs text-terminal-muted text-center font-mono">
+              &gt; REAL-TIME MARKET DATA
             </p>
           </div>
         </div>

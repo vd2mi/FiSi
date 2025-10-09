@@ -10,33 +10,33 @@ const TAB_ICONS = {
 };
 
 const TAB_LABELS = {
-  stocks: 'Stocks',
-  portfolio: 'Portfolio',
-  options: 'Options',
-  news: 'News',
-  crypto: 'Crypto',
+  stocks: 'STONKS',
+  portfolio: 'MY $$$',
+  options: 'OPTS',
+  news: 'NEWS',
+  crypto: 'CRYPTO',
 };
 
 function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLogout }) {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
-    <header className="bg-terminal-panel border-b border-terminal-border px-6 py-4 flex items-center justify-between">
+    <header className="bg-terminal-panel border-b border-terminal-border px-6 py-4 flex items-center justify-between shadow-neon-sm">
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold text-terminal-accent font-mono">Fi‑Si</h1>
-        <span className="text-sm text-terminal-muted">Financial Terminal</span>
+        <h1 className="text-2xl font-bold text-terminal-accent font-mono neon-text">Fi‑Si</h1>
+        <span className="text-sm text-terminal-muted">[ LIVE TERMINAL ]</span>
       </div>
 
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2 text-terminal-muted">
           <User size={16} />
-          <span className="text-xs">{userId}</span>
+          <span className="text-xs font-mono">&gt; {userId}</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-terminal-green' : 'bg-terminal-red'} animate-pulse`}></div>
-          <span className="text-xs text-terminal-muted">
-            {isConnected ? 'Live' : 'Offline'}
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-terminal-green shadow-neon-sm' : 'bg-terminal-red'} animate-pulse`}></div>
+          <span className="text-xs text-terminal-text font-mono">
+            {isConnected ? '[CONNECTED]' : '[OFFLINE]'}
           </span>
         </div>
 

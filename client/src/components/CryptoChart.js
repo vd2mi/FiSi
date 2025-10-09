@@ -90,7 +90,7 @@ function CryptoChart({ coinId }) {
 
     const { open, close, high, low } = data;
     const isGreen = close >= open;
-    const color = isGreen ? '#10b981' : '#ef4444';
+    const color = isGreen ? '#00ff41' : '#ff0055';
     
     const maxPrice = Math.max(open, close);
     const minPrice = Math.min(open, close);

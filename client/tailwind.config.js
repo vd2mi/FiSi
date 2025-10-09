@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
@@ -7,19 +6,23 @@ module.exports = {
     extend: {
       colors: {
         terminal: {
-          bg: '#0a0a0f',
-          panel: '#16151d',
-          border: '#2d2b3a',
-          accent: '#8b5cf6',
-          accentDark: '#7c3aed',
-          text: '#e5e7eb',
-          muted: '#9ca3af',
-          green: '#10b981',
-          red: '#ef4444',
+          bg: '#000000',
+          panel: '#0a0a0a',
+          border: '#00ff41',
+          accent: '#00ff41',
+          accentDark: '#00cc33',
+          text: '#00ff41',
+          muted: '#00aa2e',
+          green: '#00ff41',
+          red: '#ff0055',
         }
       },
       fontFamily: {
-        mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
+        mono: ['Courier New', 'Consolas', 'Monaco', 'monospace'],
+      },
+      boxShadow: {
+        'neon': '0 0 5px #00ff41, 0 0 10px #00ff41, 0 0 20px #00ff41',
+        'neon-sm': '0 0 2px #00ff41, 0 0 5px #00ff41',
       }
     },
   },
