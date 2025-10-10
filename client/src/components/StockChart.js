@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { stocksAPI } from '../services/api';
 
-function StockChart({ symbol }) {
+const StockChart = React.memo(({ symbol }) => {
   const [chartData, setChartData] = useState([]);
   const [timeframe, setTimeframe] = useState('1D');
   const [loading, setLoading] = useState(false);
@@ -52,15 +52,15 @@ function StockChart({ symbol }) {
     }
   }, [symbol, loadChartData]);
 
-  const formatXAxis = (timestamp) => {
+  const formatXAxis = useCallback((timestamp) => {
     const date = new Date(timestamp);
     if (timeframe === '1D') {
       return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  }, [timeframe]);
 
-  const CustomTooltip = ({ active, payload }) => {
+  const CustomTooltip = useMemo(() => React.memo(({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -74,39 +74,41 @@ function StockChart({ symbol }) {
       );
     }
     return null;
-  };
+  }), []);
 
-  const renderCandlestick = (props) => {
-    const { x, y, width, height, index } = props;
-    const data = chartData[index];
-    
-    if (!data || !data.open || !data.close) return null;
+  const renderCandlestick = useMemo(() => {
+    return (props) => {
+      const { x, y, width, height, index } = props;
+      const data = chartData[index];
+      
+      if (!data || !data.open || !data.close) return null;
 
-    const { open, close, high, low } = data;
-    const isGreen = close >= open;
-    const color = isGreen ? '#00ff41' : '#ff0055';
-    
-    const maxPrice = Math.max(open, close);
-    const minPrice = Math.min(open, close);
-    const priceRange = high - low;
-    
-    if (priceRange === 0) return null;
+      const { open, close, high, low } = data;
+      const isGreen = close >= open;
+      const color = isGreen ? '#00ff41' : '#ff0055';
+      
+      const maxPrice = Math.max(open, close);
+      const minPrice = Math.min(open, close);
+      const priceRange = high - low;
+      
+      if (priceRange === 0) return null;
 
-    const wickX = x + width / 2;
-    const bodyTop = y + ((high - maxPrice) / priceRange) * height;
-    const bodyBottom = y + ((high - minPrice) / priceRange) * height;
-    const bodyHeight = bodyBottom - bodyTop;
-    const wickTop = y;
-    const wickBottom = y + height;
+      const wickX = x + width / 2;
+      const bodyTop = y + ((high - maxPrice) / priceRange) * height;
+      const bodyBottom = y + ((high - minPrice) / priceRange) * height;
+      const bodyHeight = bodyBottom - bodyTop;
+      const wickTop = y;
+      const wickBottom = y + height;
 
-    return (
-      <g key={`candle-${index}`}>
-        <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
-        <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
-        <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
-      </g>
-    );
-  };
+      return (
+        <g key={`candle-${index}`}>
+          <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
+          <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
+          <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
+        </g>
+      );
+    };
+  }, [chartData]);
 
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
@@ -166,6 +168,8 @@ function StockChart({ symbol }) {
       )}
     </div>
   );
-}
+});
+
+StockChart.displayName = 'StockChart';
 
 export default StockChart;

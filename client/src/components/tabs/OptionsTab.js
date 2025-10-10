@@ -3,7 +3,7 @@ import { Activity, Search } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import { optionsAPI } from '../../services/api';
 
-function OptionsTab({ onClose }) {
+const OptionsTab = React.memo(({ onClose }) => {
   const [symbol, setSymbol] = useState('AAPL');
   const [searchQuery, setSearchQuery] = useState('');
   const [expirations, setExpirations] = useState([]);
@@ -285,6 +285,8 @@ function OptionsTab({ onClose }) {
       </div>
     </TabContainer>
   );
-}
+});
+
+OptionsTab.displayName = 'OptionsTab';
 
 export default OptionsTab;

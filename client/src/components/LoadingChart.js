@@ -1,6 +1,6 @@
 import React from 'react';
 
-function LoadingChart({ height = 250 }) {
+const LoadingChart = React.memo(({ height = 250 }) => {
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
       <div className="animate-pulse">
@@ -11,6 +11,8 @@ function LoadingChart({ height = 250 }) {
       </div>
     </div>
   );
-}
+});
+
+LoadingChart.displayName = 'LoadingChart';
 
 export default LoadingChart;

@@ -3,7 +3,7 @@ import { Newspaper, ExternalLink } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import { newsAPI } from '../../services/api';
 
-function NewsTab({ onClose }) {
+const NewsTab = React.memo(({ onClose }) => {
   const [news, setNews] = useState([]);
   const [category, setCategory] = useState('general');
   const [loading, setLoading] = useState(false);
@@ -125,6 +125,8 @@ function NewsTab({ onClose }) {
       )}
     </TabContainer>
   );
-}
+});
+
+NewsTab.displayName = 'NewsTab';
 
 export default NewsTab;

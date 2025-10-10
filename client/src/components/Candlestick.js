@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Candlestick = ({ x, y, width, height, payload }) => {
+const Candlestick = React.memo(({ x, y, width, height, payload }) => {
   if (!payload || !payload.open || !payload.close || !payload.high || !payload.low) {
     return null;
   }
@@ -38,7 +38,9 @@ const Candlestick = ({ x, y, width, height, payload }) => {
       />
     </g>
   );
-};
+});
+
+Candlestick.displayName = 'Candlestick';
 
 export const renderCandlestick = (props) => {
   const { x, y, width, height, index } = props;

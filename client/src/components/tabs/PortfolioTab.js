@@ -4,7 +4,7 @@ import TabContainer from '../TabContainer';
 import { stocksAPI } from '../../services/api';
 import { portfolioService } from '../../services/portfolioService';
 
-function PortfolioTab({ userId, subscribe, onClose }) {
+const PortfolioTab = React.memo(({ userId, subscribe, onClose }) => {
   const [portfolio, setPortfolio] = useState({ holdings: [], transactions: [], cash: 100000 });
   const [loading, setLoading] = useState(false);
   const [showTrade, setShowTrade] = useState(false);
@@ -289,6 +289,8 @@ function PortfolioTab({ userId, subscribe, onClose }) {
       )}
     </TabContainer>
   );
-}
+});
+
+PortfolioTab.displayName = 'PortfolioTab';
 
 export default PortfolioTab;

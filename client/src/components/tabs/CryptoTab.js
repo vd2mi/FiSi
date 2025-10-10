@@ -4,7 +4,7 @@ import TabContainer from '../TabContainer';
 import CryptoChart from '../CryptoChart';
 import { cryptoAPI } from '../../services/api';
 
-function CryptoTab({ subscribe, onClose }) {
+const CryptoTab = React.memo(({ subscribe, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCoin, setSelectedCoin] = useState({ id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC' });
   const [cryptoList, setCryptoList] = useState([]);
@@ -234,6 +234,8 @@ function CryptoTab({ subscribe, onClose }) {
       )}
     </TabContainer>
   );
-}
+});
+
+CryptoTab.displayName = 'CryptoTab';
 
 export default CryptoTab;

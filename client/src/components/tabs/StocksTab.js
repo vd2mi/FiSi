@@ -4,7 +4,7 @@ import TabContainer from '../TabContainer';
 import StockChart from '../StockChart';
 import { stocksAPI } from '../../services/api';
 
-function StocksTab({ subscribe, onClose }) {
+const StocksTab = React.memo(({ subscribe, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
   const [stockData, setStockData] = useState(null);
@@ -169,6 +169,8 @@ function StocksTab({ subscribe, onClose }) {
       )}
     </TabContainer>
   );
-}
+});
+
+StocksTab.displayName = 'StocksTab';
 
 export default StocksTab;
