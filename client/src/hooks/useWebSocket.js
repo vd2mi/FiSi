@@ -10,15 +10,23 @@ export function useWebSocket() {
   const listenersRef = useRef(new Map());
 
   const connect = useCallback(() => {
-    if (!WS_URL || wsRef.current?.readyState === WebSocket.OPEN) {
+    if (!WS_URL) {
+      console.error('❌ REACT_APP_WS_URL is not configured');
+      console.error('   Set this in your .env file or Vercel environment variables');
+      return;
+    }
+    
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
 
+    console.log('🔌 Connecting to WebSocket:', WS_URL);
+    
     try {
       const ws = new WebSocket(WS_URL);
       
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('✅ WebSocket connected to:', WS_URL);
         setIsConnected(true);
         
         listenersRef.current.forEach((callbacks, key) => {
@@ -48,16 +56,20 @@ export function useWebSocket() {
       };
 
       ws.onclose = () => {
+        console.log('❌ WebSocket disconnected');
         setIsConnected(false);
         
         if (WS_URL) {
+          console.log('🔄 Reconnecting in 10 seconds...');
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, 10000);
         }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        console.error('   Check if WebSocket server is running at:', WS_URL);
         setIsConnected(false);
       };
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Activity, TrendingUp, DollarSign, Newspaper, Bitcoin, Settings, RefreshCw, LogOut, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Activity, TrendingUp, DollarSign, Newspaper, Bitcoin, Settings, RefreshCw, LogOut, User, Clock } from 'lucide-react';
 
 const TAB_ICONS = {
   stocks: TrendingUp,
@@ -19,6 +19,39 @@ const TAB_LABELS = {
 
 function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLogout }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [marketStatus, setMarketStatus] = useState({ isOpen: false, status: 'Checking...' });
+
+  useEffect(() => {
+    const checkMarketStatus = () => {
+      const now = new Date();
+      const day = now.getDay(); // 0 = Sunday, 6 = Saturday
+      const hour = now.getHours();
+      const minutes = now.getMinutes();
+      const timeInMinutes = hour * 60 + minutes;
+      const marketOpen = 570; 
+      const marketClose = 960; 
+
+      const isWeekday = day >= 1 && day <= 5;
+      const isDuringMarketHours = timeInMinutes >= marketOpen && timeInMinutes < marketClose;
+
+      if (!isWeekday) {
+        setMarketStatus({ isOpen: false, status: 'CLOSED (Weekend)' });
+      } else if (!isDuringMarketHours) {
+        if (timeInMinutes < marketOpen) {
+          setMarketStatus({ isOpen: false, status: 'PRE-MARKET' });
+        } else {
+          setMarketStatus({ isOpen: false, status: 'AFTER-HOURS' });
+        }
+      } else {
+        setMarketStatus({ isOpen: true, status: 'MARKET OPEN' });
+      }
+    };
+
+    checkMarketStatus();
+    const interval = setInterval(checkMarketStatus, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <header className="bg-terminal-panel border-b border-terminal-border px-6 py-4 flex items-center justify-between shadow-neon-sm">
@@ -34,9 +67,16 @@ function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLo
         </div>
 
         <div className="flex items-center gap-2">
+          <Clock size={14} />
+          <span className={`text-xs font-mono ${marketStatus.isOpen ? 'text-terminal-green' : 'text-terminal-muted'}`}>
+            [{marketStatus.status}]
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2" title={isConnected ? 'WebSocket connected' : 'WebSocket disconnected - prices may not update'}>
           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-terminal-green shadow-neon-sm' : 'bg-terminal-red'} animate-pulse`}></div>
           <span className="text-xs text-terminal-text font-mono">
-            {isConnected ? '[CONNECTED]' : '[OFFLINE]'}
+            {isConnected ? '[WS: LIVE]' : '[WS: OFFLINE]'}
           </span>
         </div>
 
