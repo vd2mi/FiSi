@@ -82,49 +82,47 @@ const CryptoChart = React.memo(({ coinId }) => {
     return null;
   }), [formatPrice]);
 
-  const renderCandlestick = useMemo(() => {
-    return (props) => {
-      const { x, y, width, height, index, payload } = props;
-      const data = payload;
-      
-      if (!data || !data.open || !data.close) return null;
+  const renderCandlestick = useCallback((props) => {
+    const { x, y, width, height, index, payload } = props;
+    const data = payload;
+    
+    if (!data || !data.open || !data.close) return null;
 
-      const { open, close, high, low } = data;
-      const isGreen = close >= open;
-      const color = isGreen ? '#00ff41' : '#ff0055';
-      
-      const wickX = x + width / 2;
-      
-      const candleRange = high - low;
-      if (candleRange === 0) {
-        const centerY = y + height / 2;
-        return (
-          <g key={`candle-${index}`}>
-            <line x1={x} y1={centerY} x2={x + width} y2={centerY} stroke={color} strokeWidth={1} />
-          </g>
-        );
-      }
-      
-      const bodyTop = y + ((high - Math.max(open, close)) / candleRange) * height;
-      const bodyBottom = y + ((high - Math.min(open, close)) / candleRange) * height;
-      const bodyHeight = Math.abs(bodyBottom - bodyTop);
-      
-      const minBodyHeight = Math.max(bodyHeight, 1);
-
+    const { open, close, high, low } = data;
+    const isGreen = close >= open;
+    const color = isGreen ? '#00ff41' : '#ff0055';
+    
+    const wickX = x + width / 2;
+    
+    const candleRange = high - low;
+    if (candleRange === 0) {
+      const centerY = y + height / 2;
       return (
         <g key={`candle-${index}`}>
-          <line x1={wickX} y1={y} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
-          <line x1={wickX} y1={bodyBottom} x2={wickX} y2={y + height} stroke={color} strokeWidth={1} />
-          <rect 
-            x={x + 1} 
-            y={Math.min(bodyTop, bodyBottom)} 
-            width={Math.max(width - 2, 1)} 
-            height={minBodyHeight} 
-            fill={color} 
-          />
+          <line x1={x} y1={centerY} x2={x + width} y2={centerY} stroke={color} strokeWidth={1} />
         </g>
       );
-    };
+    }
+    
+    const bodyTop = y + ((high - Math.max(open, close)) / candleRange) * height;
+    const bodyBottom = y + ((high - Math.min(open, close)) / candleRange) * height;
+    const bodyHeight = Math.abs(bodyBottom - bodyTop);
+    
+    const minBodyHeight = Math.max(bodyHeight, 1);
+
+    return (
+      <g key={`candle-${index}`}>
+        <line x1={wickX} y1={y} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
+        <line x1={wickX} y1={bodyBottom} x2={wickX} y2={y + height} stroke={color} strokeWidth={1} />
+        <rect 
+          x={x + 1} 
+          y={Math.min(bodyTop, bodyBottom)} 
+          width={Math.max(width - 2, 1)} 
+          height={minBodyHeight} 
+          fill={color} 
+        />
+      </g>
+    );
   }, []);
 
   return (
