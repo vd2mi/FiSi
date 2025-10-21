@@ -110,7 +110,7 @@ const StockChart = React.memo(({ symbol }) => {
       },
       priceScaleId: '',
       scaleMargins: {
-        top: 0.8,
+        top: 0.9,
         bottom: 0,
       },
     });

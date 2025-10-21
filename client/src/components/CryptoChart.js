@@ -139,7 +139,7 @@ const CryptoChart = React.memo(({ coinId }) => {
       },
       priceScaleId: '',
       scaleMargins: {
-        top: 0.8,
+        top: 0.9,
         bottom: 0,
       },
     });
@@ -178,6 +178,7 @@ const CryptoChart = React.memo(({ coinId }) => {
         <h5 className="text-sm font-semibold text-terminal-text">Price Chart</h5>
         <div className="flex gap-2">
           {[
+            { value: 1, label: '1D' },
             { value: 7, label: '7D' },
             { value: 30, label: '30D' },
             { value: 90, label: '90D' },
