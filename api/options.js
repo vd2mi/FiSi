@@ -47,6 +47,10 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
   try {
     // Fetch option chain snapshots from Alpaca
     const response = await axios.get(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}`, {
+      params: {
+        feed: 'indicative',  // Required for options data
+        limit: 1000          // Max number of contracts to return
+      },
       headers: {
         'APCA-API-KEY-ID': apiKey,
         'APCA-API-SECRET-KEY': secretKey
@@ -125,6 +129,10 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
     // Use Market Data API to fetch option snapshots (same endpoint as option chain)
     // We'll extract expiration dates from the contract symbols
     const response = await axios.get(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}`, {
+      params: {
+        feed: 'indicative',  // Required for options data
+        limit: 1000          // Max number of contracts to return
+      },
       headers: {
         'APCA-API-KEY-ID': apiKey,
         'APCA-API-SECRET-KEY': secretKey
