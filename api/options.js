@@ -52,6 +52,7 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
         limit: 1000          // Max number of contracts to return
       },
       headers: {
+        'accept': 'application/json',
         'APCA-API-KEY-ID': apiKey,
         'APCA-API-SECRET-KEY': secretKey
       }
@@ -145,6 +146,7 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
         limit: 1000          // Max number of contracts to return
       },
       headers: {
+        'accept': 'application/json',
         'APCA-API-KEY-ID': apiKey,
         'APCA-API-SECRET-KEY': secretKey
       }

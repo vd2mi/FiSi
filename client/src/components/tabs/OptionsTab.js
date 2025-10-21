@@ -32,6 +32,13 @@ const OptionsTab = React.memo(({ onClose }) => {
       const res = await optionsAPI.getChain(symbol, selectedExpiration);
       console.log('Raw API response:', res.data);
       console.log('First strike sample:', res.data.data?.strikes?.[0]);
+      console.log('All strikes:', res.data.data?.strikes?.map(s => ({ 
+        strike: s.strike, 
+        callIV: s.call.impliedVolatility,
+        callDelta: s.call.delta,
+        putIV: s.put.impliedVolatility 
+      })));
+      console.log('Visible strikes (5-15):', res.data.data?.strikes?.slice(5, 15).map(s => s.strike));
       setOptionChain(res.data.data);
       setLastUpdate(new Date());
     } catch (error) {
