@@ -104,11 +104,8 @@ const OptionsTab = React.memo(({ onClose }) => {
               {lastUpdate && (
                 <div className="text-xs text-terminal-muted mt-1">
                   Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refreshing every 30s
-                  <div className="mt-1 text-terminal-accent">
-                    ⚠️ OI's are not yet available, we are working on it and we value your patience
-                  </div>
-                  <div className="mt-1 text-yellow-500">
-                    ℹ️ Greeks/IV only available for actively traded contracts (some strikes may only show data for calls or puts)
+                  <div className="mt-1 text-terminal-muted">
+                    Open Interest data coming soon
                   </div>
                 </div>
               )}
@@ -152,18 +149,18 @@ const OptionsTab = React.memo(({ onClose }) => {
                   <th className="text-center py-2 text-terminal-accent">STRIKE</th>
                   <th colSpan="5" className="text-center py-2 text-terminal-red">PUTS</th>
                 </tr>
-                <tr className="text-terminal-muted">
-                  <th className="text-left py-2">Bid</th>
-                  <th className="text-left py-2">Ask</th>
-                  <th className="text-right py-2">Vol</th>
-                  <th className="text-right py-2">OI</th>
-                  <th className="text-right py-2">IV</th>
+                <tr>
+                  <th className="text-left py-2 text-terminal-green">Bid</th>
+                  <th className="text-left py-2 text-terminal-green">Ask</th>
+                  <th className="text-right py-2 text-terminal-green">Vol</th>
+                  <th className="text-right py-2 text-terminal-green">OI</th>
+                  <th className="text-right py-2 text-terminal-green">IV</th>
                   <th className="text-center py-2 text-terminal-accent">Price</th>
-                  <th className="text-left py-2">IV</th>
-                  <th className="text-left py-2">OI</th>
-                  <th className="text-right py-2">Vol</th>
-                  <th className="text-right py-2">Ask</th>
-                  <th className="text-right py-2">Bid</th>
+                  <th className="text-left py-2 text-terminal-red">IV</th>
+                  <th className="text-left py-2 text-terminal-red">OI</th>
+                  <th className="text-right py-2 text-terminal-red">Vol</th>
+                  <th className="text-right py-2 text-terminal-red">Ask</th>
+                  <th className="text-right py-2 text-terminal-red">Bid</th>
                 </tr>
               </thead>
               <tbody>

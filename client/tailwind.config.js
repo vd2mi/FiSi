@@ -12,10 +12,9 @@ module.exports = {
           accent: 'var(--color-accent)',
           accentDark: 'var(--color-accent)',
           text: 'var(--color-accent)',
-          secondary: 'var(--color-secondary)',
-          muted: '#00aa2e',
-          green: '#00ff41',
-          red: '#ff0055',
+          muted: 'var(--color-accent)',
+          green: '#00ff00',
+          red: '#ff0066',
         }
       },
       fontFamily: {

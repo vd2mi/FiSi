@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --color-accent: #00ff41;
-  --color-secondary: #00ffff;
+  --color-accent: #3b82f6;
 }
 
 * {
@@ -17,9 +16,13 @@ body {
   font-family: 'Courier New', Consolas, Monaco, monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #000000;
+  background: linear-gradient(to bottom, #0f172a, #1e293b);
   color: var(--color-accent);
   overflow: hidden;
+}
+
+body:not(.professional-mode) {
+  background-color: #000000;
   text-shadow: 0 0 2px var(--color-accent);
 }
 
@@ -43,7 +46,6 @@ code {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent);
-  box-shadow: 0 0 5px var(--color-accent);
   filter: brightness(0.8);
 }
 
@@ -111,5 +113,53 @@ code {
 }
 
 .neon-text {
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+body:not(.professional-mode) .neon-text {
   animation: flicker 0.15s infinite;
+}
+
+body.professional-mode {
+  text-shadow: none;
+  background: linear-gradient(to bottom, #0f172a, #1e293b);
+}
+
+body.professional-mode .shadow-neon,
+body.professional-mode .shadow-neon-sm {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+}
+
+body:not(.professional-mode) ::-webkit-scrollbar-thumb:hover {
+  box-shadow: 0 0 5px var(--color-accent);
+}
+
+body.professional-mode ::-webkit-scrollbar-thumb {
+  box-shadow: none;
+}
+
+body.professional-mode ::-webkit-scrollbar-thumb:hover {
+  filter: brightness(0.8);
+}
+
+body.professional-mode .animate-pulse {
+  animation: none;
+}
+
+body.professional-mode .bg-terminal-panel {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+}
+
+body.professional-mode .bg-terminal-bg {
+  background-color: #0f172a;
+}
+
+body.professional-mode .border-terminal-border {
+  border-color: #334155;
+}
+
+body.professional-mode ::-webkit-scrollbar-track {
+  background: #1e293b;
 }

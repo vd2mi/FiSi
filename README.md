@@ -18,10 +18,10 @@ Professional-grade financial terminal for tracking stocks, options, cryptocurren
 ### **Key Highlights:**
 - 📡 **Live WebSocket streaming** - Prices update every 5 seconds
 - 📊 **OHLC Candlestick charts** - Professional trading visualization
-- 🎲 **Options Greeks** - Delta, Gamma, Theta, Vega on hover
+- 🎲 **Options Greeks** - Delta, Gamma, Theta, Vega, Rho with auto-refresh
 - 💼 **Portfolio tracking** - Buy/sell simulation with P&L calculations
 - 🔐 **Firebase Authentication** - Secure user management
-- 🎨 **Matrix UI** - Pitch black + neon green aesthetic
+- 🎨 **Dual Themes** - Matrix (neon) or Professional (clean) with custom colors
 
 ---
 
@@ -64,6 +64,13 @@ Professional-grade financial terminal for tracking stocks, options, cryptocurren
 - Efficient subscription management
 - 5-second refresh intervals with optimized re-rendering
 
+### **Theme Customization**
+- **Professional Mode** - Clean, Bloomberg-style interface
+- **Matrix Mode** - Neon aesthetics with glow effects
+- 16 preset colors (8 neon + 8 professional)
+- Custom color picker for any hex color
+- Per-user theme persistence
+
 ### **Advanced Charting**
 - OHLC candlestick visualization
 - Multiple timeframes (1D, 1W, 1M, 3M, 1Y)
@@ -71,11 +78,13 @@ Professional-grade financial terminal for tracking stocks, options, cryptocurren
 - Color-coded bull/bear candles
 
 ### **Options Analysis**
-- Full option chains (calls & puts)
-- Greeks displayed on hover
+- Full option chains (calls & puts) via Alpaca Markets
+- Live Greeks (Delta, Gamma, Theta, Vega, Rho) on hover
+- Auto-refresh every 30 seconds + manual refresh
 - Real expiration dates
 - Bid/Ask spreads & volume
-- Open interest data
+- Implied Volatility for all liquid contracts
+- Smart filtering - only shows actively traded strikes
 
 ### **Portfolio Management**
 - $100K virtual starting capital
@@ -87,8 +96,11 @@ Professional-grade financial terminal for tracking stocks, options, cryptocurren
 ### **Modern Terminal UI**
 - Drag-and-drop resizable panels
 - Customizable layout persistence
-- Matrix-inspired neon aesthetics
+- **Dual theme modes:** Matrix (neon) or Professional (clean)
+- **Full color customization** - 8 presets + custom color picker
+- Theme saved per user
 - Responsive design
+- NYC timezone-based market hours
 
 ---
 
@@ -230,6 +242,8 @@ This project demonstrates:
 - ✅ **Data visualization** - Custom candlestick charts
 - ✅ **Responsive design** - Drag-and-drop grid system
 - ✅ **Production deployment** - Multi-platform hosting
+- ✅ **Theme customization** - Dual-mode UI with per-user color preferences
+- ✅ **Timezone handling** - NYC market hours for global users
 
 ---
 
