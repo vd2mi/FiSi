@@ -84,22 +84,25 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
       const latestQuote = snapshot.latestQuote || {};
       const latestTrade = snapshot.latestTrade || {};
       const greeks = snapshot.greeks || {};
+      const impliedVol = snapshot.impliedVolatility || 0;
 
       strikeMap[strike][optionType] = {
         bid: latestQuote.bp || 0,
         ask: latestQuote.ap || 0,
         lastPrice: latestTrade.p || 0,
         volume: latestTrade.s || 0,
-        impliedVolatility: snapshot.impliedVolatility || greeks.implied_volatility || 0,
-        // Greeks
-        delta: greeks.delta || 0,
-        gamma: greeks.gamma || 0,
-        theta: greeks.theta || 0,
-        vega: greeks.vega || 0,
-        rho: greeks.rho || 0,
+        openInterest: 0, // Alpaca doesn't provide openInterest in snapshots
+        impliedVolatility: impliedVol,
+        // Greeks (may be undefined for illiquid contracts)
+        delta: greeks.delta !== undefined ? greeks.delta : null,
+        gamma: greeks.gamma !== undefined ? greeks.gamma : null,
+        theta: greeks.theta !== undefined ? greeks.theta : null,
+        vega: greeks.vega !== undefined ? greeks.vega : null,
+        rho: greeks.rho !== undefined ? greeks.rho : null,
         // Additional metadata
         contractSymbol: contractSymbol,
-        expiration: contractInfo.expiration
+        expiration: contractInfo.expiration,
+        hasGreeks: !!snapshot.greeks
       };
     });
 

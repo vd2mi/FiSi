@@ -69,7 +69,8 @@ const OptionsTab = React.memo(({ onClose }) => {
   };
 
   const formatNumber = (num, decimals = 2) => {
-    return num ? num.toFixed(decimals) : '--';
+    if (num === null || num === undefined) return 'N/A';
+    return num.toFixed(decimals);
   };
 
   return (
