@@ -82,36 +82,38 @@ const CryptoChart = React.memo(({ coinId }) => {
     return null;
   }), [formatPrice]);
 
-  const renderCandlestick = useCallback((props) => {
-    const { x, y, width, height, index } = props;
-    const data = chartData[index];
-    
-    if (!data || !data.open || !data.close) return null;
+  const renderCandlestick = useMemo(() => {
+    return (props) => {
+      const { x, y, width, height, index } = props;
+      const data = chartData[index];
+      
+      if (!data || !data.open || !data.close) return null;
 
-    const { open, close, high, low } = data;
-    const isGreen = close >= open;
-    const color = isGreen ? '#00ff41' : '#ff0055';
-    
-    const maxPrice = Math.max(open, close);
-    const minPrice = Math.min(open, close);
-    const priceRange = high - low;
-    
-    if (priceRange === 0) return null;
+      const { open, close, high, low } = data;
+      const isGreen = close >= open;
+      const color = isGreen ? '#00ff41' : '#ff0055';
+      
+      const maxPrice = Math.max(open, close);
+      const minPrice = Math.min(open, close);
+      const priceRange = high - low;
+      
+      if (priceRange === 0) return null;
 
-    const wickX = x + width / 2;
-    const bodyTop = y + ((high - maxPrice) / priceRange) * height;
-    const bodyBottom = y + ((high - minPrice) / priceRange) * height;
-    const bodyHeight = bodyBottom - bodyTop;
-    const wickTop = y;
-    const wickBottom = y + height;
+      const wickX = x + width / 2;
+      const bodyTop = y + ((high - maxPrice) / priceRange) * height;
+      const bodyBottom = y + ((high - minPrice) / priceRange) * height;
+      const bodyHeight = bodyBottom - bodyTop;
+      const wickTop = y;
+      const wickBottom = y + height;
 
-    return (
-      <g key={`candle-${index}`}>
-        <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
-        <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
-        <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
-      </g>
-    );
+      return (
+        <g key={`candle-${index}`}>
+          <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
+          <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
+          <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
+        </g>
+      );
+    };
   }, [chartData]);
 
   return (
