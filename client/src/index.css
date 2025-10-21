@@ -4,6 +4,7 @@
 
 :root {
   --color-accent: #00ff41;
+  --color-secondary: #00ffff;
 }
 
 * {
@@ -111,30 +112,4 @@ code {
 
 .neon-text {
   animation: flicker 0.15s infinite;
-}
-
-@layer utilities {
-  .text-terminal-accent {
-    color: var(--color-accent) !important;
-  }
-  
-  .bg-terminal-accent {
-    background-color: var(--color-accent) !important;
-  }
-  
-  .border-terminal-accent {
-    border-color: var(--color-accent) !important;
-  }
-  
-  .text-terminal-green {
-    color: var(--color-accent) !important;
-  }
-  
-  .shadow-neon {
-    box-shadow: 0 0 5px var(--color-accent), 0 0 10px var(--color-accent), 0 0 20px var(--color-accent) !important;
-  }
-  
-  .shadow-neon-sm {
-    box-shadow: 0 0 2px var(--color-accent), 0 0 5px var(--color-accent) !important;
-  }
 }

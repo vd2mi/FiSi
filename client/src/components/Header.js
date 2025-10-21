@@ -22,13 +22,18 @@ function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLo
   const [marketStatus, setMarketStatus] = useState({ isOpen: false, status: 'Checking...' });
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [accentColor, setAccentColor] = useState('#00ff41');
+  const [secondaryColor, setSecondaryColor] = useState('#00ffff');
 
   useEffect(() => {
-    const savedColor = localStorage.getItem(`fi-si-color-${userUid}`);
-    if (savedColor) {
-      setAccentColor(savedColor);
-      applyColor(savedColor);
+    const savedPrimary = localStorage.getItem(`fi-si-color-primary-${userUid}`);
+    const savedSecondary = localStorage.getItem(`fi-si-color-secondary-${userUid}`);
+    if (savedPrimary) {
+      setAccentColor(savedPrimary);
     }
+    if (savedSecondary) {
+      setSecondaryColor(savedSecondary);
+    }
+    applyColors(savedPrimary || '#00ff41', savedSecondary || '#00ffff');
   }, [userUid]);
 
   useEffect(() => {
@@ -64,14 +69,21 @@ function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLo
     return () => clearInterval(interval);
   }, []);
 
-  const applyColor = (color) => {
-    document.documentElement.style.setProperty('--color-accent', color);
+  const applyColors = (primary, secondary) => {
+    document.documentElement.style.setProperty('--color-accent', primary);
+    document.documentElement.style.setProperty('--color-secondary', secondary);
   };
 
-  const handleColorChange = (color) => {
+  const handlePrimaryColorChange = (color) => {
     setAccentColor(color);
-    applyColor(color);
-    localStorage.setItem(`fi-si-color-${userUid}`, color);
+    applyColors(color, secondaryColor);
+    localStorage.setItem(`fi-si-color-primary-${userUid}`, color);
+  };
+
+  const handleSecondaryColorChange = (color) => {
+    setSecondaryColor(color);
+    applyColors(accentColor, color);
+    localStorage.setItem(`fi-si-color-secondary-${userUid}`, color);
   };
 
   const PRESET_COLORS = [
@@ -148,13 +160,13 @@ function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLo
               </button>
               
               {showColorPicker && (
-                <div className="px-4 py-3 border-t border-terminal-border bg-terminal-bg">
-                  <p className="text-xs text-terminal-muted mb-2">Quick Pick:</p>
+                <div className="px-4 py-3 border-t border-terminal-border bg-terminal-bg max-h-96 overflow-y-auto">
+                  <p className="text-xs font-semibold text-terminal-text mb-2">Primary Color:</p>
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     {PRESET_COLORS.map((preset) => (
                       <button
                         key={preset.value}
-                        onClick={() => handleColorChange(preset.value)}
+                        onClick={() => handlePrimaryColorChange(preset.value)}
                         className="w-12 h-12 rounded-lg border-2 transition-all hover:scale-110 relative"
                         style={{
                           backgroundColor: preset.value,
@@ -169,15 +181,44 @@ function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLo
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-terminal-muted mb-2">Custom Color:</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-4">
                     <input
                       type="color"
                       value={accentColor}
-                      onChange={(e) => handleColorChange(e.target.value)}
+                      onChange={(e) => handlePrimaryColorChange(e.target.value)}
                       className="w-full h-10 rounded cursor-pointer border-2 border-terminal-border"
                     />
                     <span className="text-xs text-terminal-muted font-mono">{accentColor}</span>
+                  </div>
+
+                  <p className="text-xs font-semibold text-terminal-text mb-2 border-t border-terminal-border pt-3">Secondary Color:</p>
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    {PRESET_COLORS.map((preset) => (
+                      <button
+                        key={preset.value + '-sec'}
+                        onClick={() => handleSecondaryColorChange(preset.value)}
+                        className="w-12 h-12 rounded-lg border-2 transition-all hover:scale-110 relative"
+                        style={{
+                          backgroundColor: preset.value,
+                          borderColor: secondaryColor === preset.value ? '#fff' : 'transparent',
+                          boxShadow: secondaryColor === preset.value ? `0 0 10px ${preset.value}` : 'none'
+                        }}
+                        title={preset.name}
+                      >
+                        {secondaryColor === preset.value && (
+                          <span className="absolute inset-0 flex items-center justify-center text-white text-xl">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={secondaryColor}
+                      onChange={(e) => handleSecondaryColorChange(e.target.value)}
+                      className="w-full h-10 rounded cursor-pointer border-2 border-terminal-border"
+                    />
+                    <span className="text-xs text-terminal-muted font-mono">{secondaryColor}</span>
                   </div>
                 </div>
               )}

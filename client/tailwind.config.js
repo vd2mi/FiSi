@@ -8,10 +8,11 @@ module.exports = {
         terminal: {
           bg: '#000000',
           panel: '#0a0a0a',
-          border: '#00ff41',
-          accent: '#00ff41',
-          accentDark: '#00cc33',
-          text: '#00ff41',
+          border: 'var(--color-accent)',
+          accent: 'var(--color-accent)',
+          accentDark: 'var(--color-accent)',
+          text: 'var(--color-accent)',
+          secondary: 'var(--color-secondary)',
           muted: '#00aa2e',
           green: '#00ff41',
           red: '#ff0055',
@@ -21,8 +22,8 @@ module.exports = {
         mono: ['Courier New', 'Consolas', 'Monaco', 'monospace'],
       },
       boxShadow: {
-        'neon': '0 0 5px #00ff41, 0 0 10px #00ff41, 0 0 20px #00ff41',
-        'neon-sm': '0 0 2px #00ff41, 0 0 5px #00ff41',
+        'neon': '0 0 5px var(--color-accent), 0 0 10px var(--color-accent), 0 0 20px var(--color-accent)',
+        'neon-sm': '0 0 2px var(--color-accent), 0 0 5px var(--color-accent)',
       }
     },
   },
