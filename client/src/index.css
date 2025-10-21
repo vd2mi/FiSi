@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-accent: #00ff41;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -13,9 +17,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #000000;
-  color: #00ff41;
+  color: var(--color-accent);
   overflow: hidden;
-  text-shadow: 0 0 2px #00ff41;
+  text-shadow: 0 0 2px var(--color-accent);
 }
 
 code {
@@ -32,13 +36,14 @@ code {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #00ff41;
+  background: var(--color-accent);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00cc33;
-  box-shadow: 0 0 5px #00ff41;
+  background: var(--color-accent);
+  box-shadow: 0 0 5px var(--color-accent);
+  filter: brightness(0.8);
 }
 
 .react-grid-layout {
@@ -70,12 +75,12 @@ code {
 }
 
 .react-grid-item.react-grid-placeholder {
-  background: #00ff41;
+  background: var(--color-accent);
   opacity: 0.15;
   transition-duration: 100ms;
   z-index: 2;
   border-radius: 8px;
-  box-shadow: 0 0 15px #00ff41;
+  box-shadow: 0 0 15px var(--color-accent);
 }
 
 .react-resizable-handle {
@@ -94,9 +99,9 @@ code {
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid #00ff41;
-  border-bottom: 2px solid #00ff41;
-  box-shadow: 0 0 3px #00ff41;
+  border-right: 2px solid var(--color-accent);
+  border-bottom: 2px solid var(--color-accent);
+  box-shadow: 0 0 3px var(--color-accent);
 }
 
 @keyframes flicker {
@@ -106,4 +111,30 @@ code {
 
 .neon-text {
   animation: flicker 0.15s infinite;
+}
+
+@layer utilities {
+  .text-terminal-accent {
+    color: var(--color-accent) !important;
+  }
+  
+  .bg-terminal-accent {
+    background-color: var(--color-accent) !important;
+  }
+  
+  .border-terminal-accent {
+    border-color: var(--color-accent) !important;
+  }
+  
+  .text-terminal-green {
+    color: var(--color-accent) !important;
+  }
+  
+  .shadow-neon {
+    box-shadow: 0 0 5px var(--color-accent), 0 0 10px var(--color-accent), 0 0 20px var(--color-accent) !important;
+  }
+  
+  .shadow-neon-sm {
+    box-shadow: 0 0 2px var(--color-accent), 0 0 5px var(--color-accent) !important;
+  }
 }

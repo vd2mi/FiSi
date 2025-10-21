@@ -139,6 +139,7 @@ function App() {
         toggleTab={toggleTab}
         resetLayout={resetLayout}
         userId={user.displayName}
+        userUid={user.uid}
         onLogout={handleLogout}
       />
       

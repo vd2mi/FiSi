@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, TrendingUp, DollarSign, Newspaper, Bitcoin, Settings, RefreshCw, LogOut, User, Clock } from 'lucide-react';
+import { Activity, TrendingUp, DollarSign, Newspaper, Bitcoin, Settings, RefreshCw, LogOut, User, Clock, Palette } from 'lucide-react';
 
 const TAB_ICONS = {
   stocks: TrendingUp,
@@ -17,14 +17,25 @@ const TAB_LABELS = {
   crypto: 'CRYPTO',
 };
 
-function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLogout }) {
+function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLogout, userUid }) {
   const [showMenu, setShowMenu] = useState(false);
   const [marketStatus, setMarketStatus] = useState({ isOpen: false, status: 'Checking...' });
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [accentColor, setAccentColor] = useState('#00ff41');
+
+  useEffect(() => {
+    const savedColor = localStorage.getItem(`fi-si-color-${userUid}`);
+    if (savedColor) {
+      setAccentColor(savedColor);
+      applyColor(savedColor);
+    }
+  }, [userUid]);
 
   useEffect(() => {
     const checkMarketStatus = () => {
-      const now = new Date();
-      const day = now.getDay(); // 0 = Sunday, 6 = Saturday
+      const nyTime = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+      const now = new Date(nyTime);
+      const day = now.getDay();
       const hour = now.getHours();
       const minutes = now.getMinutes();
       const timeInMinutes = hour * 60 + minutes;
@@ -48,10 +59,31 @@ function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLo
     };
 
     checkMarketStatus();
-    const interval = setInterval(checkMarketStatus, 60000); // Check every minute
+    const interval = setInterval(checkMarketStatus, 60000);
 
     return () => clearInterval(interval);
   }, []);
+
+  const applyColor = (color) => {
+    document.documentElement.style.setProperty('--color-accent', color);
+  };
+
+  const handleColorChange = (color) => {
+    setAccentColor(color);
+    applyColor(color);
+    localStorage.setItem(`fi-si-color-${userUid}`, color);
+  };
+
+  const PRESET_COLORS = [
+    { name: 'Matrix Green', value: '#00ff41' },
+    { name: 'Cyan', value: '#00ffff' },
+    { name: 'Neon Pink', value: '#ff10f0' },
+    { name: 'Electric Blue', value: '#0080ff' },
+    { name: 'Toxic Yellow', value: '#dfff00' },
+    { name: 'Hot Orange', value: '#ff6600' },
+    { name: 'Purple Haze', value: '#9d00ff' },
+    { name: 'Lime', value: '#ccff00' },
+  ];
 
   return (
     <header className="bg-terminal-panel border-b border-terminal-border px-6 py-4 flex items-center justify-between shadow-neon-sm">
@@ -106,13 +138,56 @@ function Header({ isConnected, visibleTabs, toggleTab, resetLayout, userId, onLo
           </button>
           
           {showMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-terminal-panel border border-terminal-border rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 mt-2 w-64 bg-terminal-panel border border-terminal-border rounded-lg shadow-xl z-50">
+              <button
+                onClick={() => setShowColorPicker(!showColorPicker)}
+                className="w-full px-4 py-2 text-left text-sm text-terminal-text hover:bg-terminal-border flex items-center gap-2 rounded-t-lg"
+              >
+                <Palette size={14} />
+                Theme Color
+              </button>
+              
+              {showColorPicker && (
+                <div className="px-4 py-3 border-t border-terminal-border bg-terminal-bg">
+                  <p className="text-xs text-terminal-muted mb-2">Quick Pick:</p>
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    {PRESET_COLORS.map((preset) => (
+                      <button
+                        key={preset.value}
+                        onClick={() => handleColorChange(preset.value)}
+                        className="w-12 h-12 rounded-lg border-2 transition-all hover:scale-110 relative"
+                        style={{
+                          backgroundColor: preset.value,
+                          borderColor: accentColor === preset.value ? '#fff' : 'transparent',
+                          boxShadow: accentColor === preset.value ? `0 0 10px ${preset.value}` : 'none'
+                        }}
+                        title={preset.name}
+                      >
+                        {accentColor === preset.value && (
+                          <span className="absolute inset-0 flex items-center justify-center text-white text-xl">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-terminal-muted mb-2">Custom Color:</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={accentColor}
+                      onChange={(e) => handleColorChange(e.target.value)}
+                      className="w-full h-10 rounded cursor-pointer border-2 border-terminal-border"
+                    />
+                    <span className="text-xs text-terminal-muted font-mono">{accentColor}</span>
+                  </div>
+                </div>
+              )}
+              
               <button
                 onClick={() => {
                   resetLayout();
                   setShowMenu(false);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-terminal-text hover:bg-terminal-border flex items-center gap-2 rounded-t-lg"
+                className="w-full px-4 py-2 text-left text-sm text-terminal-text hover:bg-terminal-border flex items-center gap-2 border-t border-terminal-border"
               >
                 <RefreshCw size={14} />
                 Reset Layout
