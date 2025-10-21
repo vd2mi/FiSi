@@ -87,24 +87,30 @@ const StockChart = React.memo(({ symbol }) => {
       const isGreen = close >= open;
       const color = isGreen ? '#00ff41' : '#ff0055';
       
-      const maxPrice = Math.max(open, close);
-      const minPrice = Math.min(open, close);
-      const priceRange = high - low;
+      // Get the overall price range for proper scaling
+      const allHighs = chartData.map(d => d.high);
+      const allLows = chartData.map(d => d.low);
+      const chartMin = Math.min(...allLows);
+      const chartMax = Math.max(...allHighs);
+      const chartRange = chartMax - chartMin;
       
-      if (priceRange === 0) return null;
+      if (chartRange === 0) return null;
 
       const wickX = x + width / 2;
-      const bodyTop = y + ((high - maxPrice) / priceRange) * height;
-      const bodyBottom = y + ((high - minPrice) / priceRange) * height;
-      const bodyHeight = bodyBottom - bodyTop;
-      const wickTop = y;
-      const wickBottom = y + height;
+      
+      // Calculate positions based on chart's overall price range
+      const wickTop = y + ((chartMax - high) / chartRange) * height;
+      const wickBottom = y + ((chartMax - low) / chartRange) * height;
+      const bodyTop = y + ((chartMax - Math.max(open, close)) / chartRange) * height;
+      const bodyBottom = y + ((chartMax - Math.min(open, close)) / chartRange) * height;
+      
+      const bodyHeight = Math.abs(bodyBottom - bodyTop);
 
       return (
         <g key={`candle-${index}`}>
           <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
           <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
-          <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
+          <rect x={x + 1} y={Math.min(bodyTop, bodyBottom)} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
         </g>
       );
     };
