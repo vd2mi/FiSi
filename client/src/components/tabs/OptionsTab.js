@@ -24,7 +24,7 @@ const OptionsTab = React.memo(({ onClose }) => {
     } catch (error) {
       console.error('Error loading expirations:', error);
     }
-  }, [symbol]);
+  }, [symbol, selectedExpiration]);
 
   const loadOptionChain = useCallback(async () => {
     setLoading(true);
