@@ -83,49 +83,36 @@ const CryptoChart = React.memo(({ coinId }) => {
   }), [formatPrice]);
 
   const renderCandlestick = useCallback((props) => {
-    const { x, y, width, height, payload } = props;
+    const { x, y, width, height, index } = props;
+    const data = chartData[index];
     
-    if (!payload || !payload.open || !payload.close) return null;
+    if (!data || !data.open || !data.close) return null;
 
-    const { open, close, high, low } = payload;
+    const { open, close, high, low } = data;
     const isGreen = close >= open;
     const color = isGreen ? '#00ff41' : '#ff0055';
     
-    const wickX = x + width / 2;
-    
+    const maxPrice = Math.max(open, close);
+    const minPrice = Math.min(open, close);
     const priceRange = high - low;
-    if (priceRange === 0) {
-      const centerY = y + height / 2;
-      return (
-        <g>
-          <line x1={x} y1={centerY} x2={x + width} y2={centerY} stroke={color} strokeWidth={1} />
-        </g>
-      );
-    }
     
-    const highY = y;
-    const lowY = y + height;
-    const openY = y + ((high - open) / priceRange) * height;
-    const closeY = y + ((high - close) / priceRange) * height;
-    
-    const bodyTop = Math.min(openY, closeY);
-    const bodyBottom = Math.max(openY, closeY);
-    const bodyHeight = Math.max(Math.abs(bodyBottom - bodyTop), 1);
+    if (priceRange === 0) return null;
+
+    const wickX = x + width / 2;
+    const bodyTop = y + ((high - maxPrice) / priceRange) * height;
+    const bodyBottom = y + ((high - minPrice) / priceRange) * height;
+    const bodyHeight = bodyBottom - bodyTop;
+    const wickTop = y;
+    const wickBottom = y + height;
 
     return (
-      <g>
-        <line x1={wickX} y1={highY} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
-        <line x1={wickX} y1={bodyBottom} x2={wickX} y2={lowY} stroke={color} strokeWidth={1} />
-        <rect 
-          x={x + 1} 
-          y={bodyTop} 
-          width={Math.max(width - 2, 1)} 
-          height={bodyHeight} 
-          fill={color} 
-        />
+      <g key={`candle-${index}`}>
+        <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
+        <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
+        <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
       </g>
     );
-  }, []);
+  }, [chartData]);
 
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
@@ -167,13 +154,13 @@ const CryptoChart = React.memo(({ coinId }) => {
               style={{ fontSize: '12px' }}
             />
             <YAxis
-              domain={['auto', 'auto']}
+              domain={['dataMin', 'dataMax']}
               stroke="#6b7280"
               style={{ fontSize: '12px' }}
               tickFormatter={(value) => formatPrice(value)}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="close" shape={renderCandlestick} />
+            <Bar dataKey="range" shape={renderCandlestick} />
           </ComposedChart>
         </ResponsiveContainer>
       ) : (
