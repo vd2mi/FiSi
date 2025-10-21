@@ -94,7 +94,7 @@ const StockChart = React.memo(({ symbol }) => {
       },
     });
 
-    const candleSeries = chart.addCandlestickSeries({
+    const candleSeries = chart.addSeries('Candlestick', {
       upColor: '#00ff41',
       downColor: '#ff0055',
       borderUpColor: '#00ff41',
@@ -103,7 +103,7 @@ const StockChart = React.memo(({ symbol }) => {
       wickDownColor: '#ff0055',
     });
 
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries('Histogram', {
       color: '#26a69a',
       priceFormat: {
         type: 'volume',
