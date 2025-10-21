@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createChart } from 'lightweight-charts';
 import { stocksAPI } from '../services/api';
 
 const StockChart = React.memo(({ symbol }) => {
-  const [chartData, setChartData] = useState([]);
   const [timeframe, setTimeframe] = useState('1D');
   const [loading, setLoading] = useState(false);
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
-  const [hoveredCandle, setHoveredCandle] = useState(null);
-  const [mousePos, setMousePos] = useState(null);
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
 
   const loadChartData = useCallback(async () => {
+    if (!candleSeriesRef.current || !volumeSeriesRef.current) return;
+    
     setLoading(true);
     try {
       const now = Math.floor(Date.now() / 1000);
@@ -28,278 +30,118 @@ const StockChart = React.memo(({ symbol }) => {
       const data = res.data.data;
 
       if (data && data.t && data.c && data.s === 'ok') {
-        const formatted = data.t.map((timestamp, i) => ({
-          time: timestamp * 1000,
+        const candleData = data.t.map((timestamp, i) => ({
+          time: timestamp,
           open: data.o[i],
           high: data.h[i],
           low: data.l[i],
           close: data.c[i],
-          volume: data.v[i] || 0,
         }));
-        setChartData(formatted);
-      } else {
-        setChartData([]);
+
+        const volumeData = data.t.map((timestamp, i) => ({
+          time: timestamp,
+          value: data.v[i] || 0,
+          color: data.c[i] >= data.o[i] ? 'rgba(0, 255, 65, 0.5)' : 'rgba(255, 0, 85, 0.5)',
+        }));
+
+        candleSeriesRef.current.setData(candleData);
+        volumeSeriesRef.current.setData(volumeData);
       }
     } catch (error) {
       if (error.response?.status === 403) {
       }
-      setChartData([]);
     } finally {
       setLoading(false);
     }
   }, [symbol, timeframe]);
 
   useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 500,
+      layout: {
+        background: { color: '#0a0a0a' },
+        textColor: '#9ca3af',
+      },
+      grid: {
+        vertLines: { color: '#1a1a1a' },
+        horzLines: { color: '#1a1a1a' },
+      },
+      crosshair: {
+        mode: 1,
+        vertLine: {
+          width: 1,
+          color: '#6b7280',
+          style: 1,
+          labelBackgroundColor: '#1a1a1a',
+        },
+        horzLine: {
+          width: 1,
+          color: '#6b7280',
+          style: 1,
+          labelBackgroundColor: '#1a1a1a',
+        },
+      },
+      timeScale: {
+        borderColor: '#1a1a1a',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      rightPriceScale: {
+        borderColor: '#1a1a1a',
+      },
+    });
+
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#00ff41',
+      downColor: '#ff0055',
+      borderUpColor: '#00ff41',
+      borderDownColor: '#ff0055',
+      wickUpColor: '#00ff41',
+      wickDownColor: '#ff0055',
+    });
+
+    const volumeSeries = chart.addHistogramSeries({
+      color: '#26a69a',
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: '',
+      scaleMargins: {
+        top: 0.8,
+        bottom: 0,
+      },
+    });
+
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (symbol) {
       loadChartData();
     }
   }, [symbol, loadChartData]);
-
-  const drawChart = useCallback(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container || !chartData.length) return;
-
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const rect = container.getBoundingClientRect();
-    const width = rect.width;
-    const height = 400;
-    
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    ctx.scale(dpr, dpr);
-
-    const padding = { left: 60, right: 10, top: 20, bottom: 80 };
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
-    const volumeHeight = 60;
-    const candleChartHeight = chartHeight - volumeHeight - 10;
-
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, width, height);
-
-    const prices = chartData.flatMap(d => [d.high, d.low]);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    const priceRange = maxPrice - minPrice;
-
-    const maxVolume = Math.max(...chartData.map(d => d.volume));
-
-    if (priceRange === 0) return;
-
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 1;
-    
-    for (let i = 0; i <= 8; i++) {
-      const y = padding.top + (i * candleChartHeight / 8);
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    
-    for (let i = 0; i <= 8; i++) {
-      const price = maxPrice - (priceRange * i / 8);
-      const y = padding.top + (i * candleChartHeight / 8);
-      ctx.fillText(`$${price.toFixed(2)}`, padding.left - 8, y);
-    }
-
-    const candleWidth = Math.max(chartWidth / chartData.length - 2, 1);
-    const candleSpacing = chartWidth / chartData.length;
-
-    chartData.forEach((candle, index) => {
-      const x = padding.left + (index * candleSpacing) + (candleSpacing / 2);
-      const isGreen = candle.close >= candle.open;
-      const color = isGreen ? '#00ff41' : '#ff0055';
-      const isHovered = hoveredCandle === index;
-
-      const highY = padding.top + ((maxPrice - candle.high) / priceRange) * candleChartHeight;
-      const lowY = padding.top + ((maxPrice - candle.low) / priceRange) * candleChartHeight;
-      const openY = padding.top + ((maxPrice - candle.open) / priceRange) * candleChartHeight;
-      const closeY = padding.top + ((maxPrice - candle.close) / priceRange) * candleChartHeight;
-
-      const bodyTop = Math.min(openY, closeY);
-      const bodyBottom = Math.max(openY, closeY);
-      const bodyHeight = Math.max(Math.abs(bodyBottom - bodyTop), 1);
-
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = isHovered ? 1 : 0.9;
-      ctx.lineWidth = isHovered ? 2 : 1;
-
-      ctx.beginPath();
-      ctx.moveTo(x, highY);
-      ctx.lineTo(x, bodyTop);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(x, bodyBottom);
-      ctx.lineTo(x, lowY);
-      ctx.stroke();
-
-      if (isGreen) {
-        ctx.strokeRect(x - candleWidth/2, bodyTop, candleWidth, bodyHeight);
-      } else {
-        ctx.fillRect(x - candleWidth/2, bodyTop, candleWidth, bodyHeight);
-      }
-
-      const volumeBarHeight = (candle.volume / maxVolume) * volumeHeight;
-      const volumeY = padding.top + candleChartHeight + 10;
-      
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = color;
-      ctx.fillRect(x - candleWidth/2, volumeY + volumeHeight - volumeBarHeight, candleWidth, volumeBarHeight);
-    });
-
-    ctx.globalAlpha = 1;
-
-    if (mousePos && mousePos.x >= padding.left && mousePos.x <= width - padding.right) {
-      ctx.strokeStyle = '#6b7280';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([5, 5]);
-      
-      ctx.beginPath();
-      ctx.moveTo(mousePos.x, padding.top);
-      ctx.lineTo(mousePos.x, padding.top + candleChartHeight);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(padding.left, mousePos.y);
-      ctx.lineTo(width - padding.right, mousePos.y);
-      ctx.stroke();
-
-      ctx.setLineDash([]);
-
-      if (mousePos.y >= padding.top && mousePos.y <= padding.top + candleChartHeight) {
-        const price = maxPrice - ((mousePos.y - padding.top) / candleChartHeight) * priceRange;
-        
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(padding.left - 58, mousePos.y - 10, 56, 20);
-        
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '11px monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(`$${price.toFixed(2)}`, padding.left - 8, mousePos.y);
-      }
-    }
-
-    const timeStep = Math.max(1, Math.floor(chartData.length / 8));
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-
-    for (let i = 0; i < chartData.length; i += timeStep) {
-      const candle = chartData[i];
-      const x = padding.left + (i * candleSpacing) + (candleSpacing / 2);
-      const date = new Date(candle.time);
-      let timeStr;
-      
-      if (timeframe === '1D') {
-        timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      } else {
-        timeStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      }
-      
-      ctx.fillText(timeStr, x, height - 60);
-    }
-
-    if (hoveredCandle !== null && chartData[hoveredCandle]) {
-      const candle = chartData[hoveredCandle];
-      const x = padding.left + (hoveredCandle * candleSpacing) + (candleSpacing / 2);
-      
-      const isGreen = candle.close >= candle.open;
-      const change = candle.close - candle.open;
-      const changePercent = (change / candle.open) * 100;
-      
-      const tooltipWidth = 180;
-      const tooltipHeight = 110;
-      let tooltipX = x + 15;
-      let tooltipY = padding.top + 10;
-      
-      if (tooltipX + tooltipWidth > width - padding.right) {
-        tooltipX = x - tooltipWidth - 15;
-      }
-
-      ctx.fillStyle = 'rgba(10, 10, 10, 0.95)';
-      ctx.strokeStyle = isGreen ? '#00ff41' : '#ff0055';
-      ctx.lineWidth = 2;
-      ctx.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
-      ctx.strokeRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
-
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'left';
-      
-      const date = new Date(candle.time);
-      const dateStr = date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit'
-      });
-      
-      ctx.fillText(dateStr, tooltipX + 10, tooltipY + 15);
-
-      ctx.font = 'bold 11px monospace';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(`O: $${candle.open.toFixed(2)}`, tooltipX + 10, tooltipY + 35);
-      ctx.fillText(`H: $${candle.high.toFixed(2)}`, tooltipX + 10, tooltipY + 50);
-      ctx.fillText(`L: $${candle.low.toFixed(2)}`, tooltipX + 10, tooltipY + 65);
-      ctx.fillText(`C: $${candle.close.toFixed(2)}`, tooltipX + 10, tooltipY + 80);
-      
-      ctx.fillStyle = isGreen ? '#00ff41' : '#ff0055';
-      const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
-      ctx.fillText(changeText, tooltipX + 10, tooltipY + 95);
-    }
-  }, [chartData, hoveredCandle, mousePos, timeframe]);
-
-  useEffect(() => {
-    drawChart();
-  }, [drawChart]);
-
-  useEffect(() => {
-    const handleResize = () => drawChart();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [drawChart]);
-
-  const handleMouseMove = useCallback((e) => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container || !chartData.length) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setMousePos({ x, y });
-
-    const padding = 60;
-    const chartWidth = rect.width - padding - 10;
-    const candleSpacing = chartWidth / chartData.length;
-    
-    const candleIndex = Math.floor((x - padding) / candleSpacing);
-    
-    if (candleIndex >= 0 && candleIndex < chartData.length) {
-      setHoveredCandle(candleIndex);
-    } else {
-      setHoveredCandle(null);
-    }
-  }, [chartData]);
-
-  const handleMouseLeave = useCallback(() => {
-    setHoveredCandle(null);
-    setMousePos(null);
-  }, []);
 
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
@@ -323,32 +165,17 @@ const StockChart = React.memo(({ symbol }) => {
       </div>
 
       {loading ? (
-        <div className="h-96 flex items-center justify-center text-terminal-muted">
+        <div className="h-[500px] flex items-center justify-center text-terminal-muted">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-terminal-accent border-t-transparent rounded-full animate-spin"></div>
             <div>Loading chart data...</div>
           </div>
         </div>
-      ) : chartData.length > 0 ? (
-        <div ref={containerRef} className="w-full">
-          <canvas
-            ref={canvasRef}
-            className="w-full border border-terminal-border rounded cursor-crosshair bg-terminal-panel"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-          />
-        </div>
       ) : (
-        <div className="h-96 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-terminal-muted mb-2">📊 Chart data not available</div>
-            <div className="text-xs text-terminal-muted">
-              Finnhub free tier doesn't include historical chart data.
-              <br />
-              Real-time prices are updating above! ✅
-            </div>
-          </div>
-        </div>
+        <div
+          ref={chartContainerRef}
+          className="border border-terminal-border rounded"
+        />
       )}
     </div>
   );
