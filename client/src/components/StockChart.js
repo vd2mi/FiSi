@@ -52,6 +52,9 @@ const StockChart = React.memo(({ symbol }) => {
     }
   }, [symbol, loadChartData]);
 
+  const [hoveredCandle, setHoveredCandle] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
   const drawChart = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -80,6 +83,18 @@ const StockChart = React.memo(({ symbol }) => {
     const candleSpacing = chartWidth / chartData.length;
 
     ctx.clearRect(0, 0, width, height);
+    
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'right';
+    
+    const priceStep = (maxPrice - minPrice) / 5;
+    for (let i = 0; i <= 5; i++) {
+      const price = minPrice + (priceStep * i);
+      const y = padding + (i * chartHeight / 5);
+      ctx.fillText(`$${price.toFixed(2)}`, padding - 5, y + 4);
+    }
+
     ctx.strokeStyle = '#6b7280';
     ctx.lineWidth = 1;
 
@@ -87,6 +102,7 @@ const StockChart = React.memo(({ symbol }) => {
       const x = padding + (index * candleSpacing) + (candleSpacing / 2);
       const isGreen = candle.close >= candle.open;
       const color = isGreen ? '#00ff41' : '#ff0055';
+      const isHovered = hoveredCandle === index;
 
       const highY = padding + ((maxPrice - candle.high) / priceRange) * chartHeight;
       const lowY = padding + ((maxPrice - candle.low) / priceRange) * chartHeight;
@@ -99,6 +115,7 @@ const StockChart = React.memo(({ symbol }) => {
 
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
+      ctx.lineWidth = isHovered ? 2 : 1;
 
       ctx.beginPath();
       ctx.moveTo(x, highY);
@@ -112,7 +129,23 @@ const StockChart = React.memo(({ symbol }) => {
 
       ctx.fillRect(x - candleWidth/2, bodyTop, candleWidth, bodyHeight);
     });
-  }, [chartData]);
+
+    if (hoveredCandle !== null) {
+      const candle = chartData[hoveredCandle];
+      const x = padding + (hoveredCandle * candleSpacing) + (candleSpacing / 2);
+      
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(mousePos.x + 10, mousePos.y - 60, 120, 50);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`O: $${candle.open.toFixed(2)}`, mousePos.x + 15, mousePos.y - 40);
+      ctx.fillText(`H: $${candle.high.toFixed(2)}`, mousePos.x + 15, mousePos.y - 25);
+      ctx.fillText(`L: $${candle.low.toFixed(2)}`, mousePos.x + 15, mousePos.y - 10);
+      ctx.fillText(`C: $${candle.close.toFixed(2)}`, mousePos.x + 15, mousePos.y + 5);
+    }
+  }, [chartData, hoveredCandle, mousePos]);
 
   useEffect(() => {
     drawChart();
@@ -123,6 +156,34 @@ const StockChart = React.memo(({ symbol }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [drawChart]);
+
+  const handleMouseMove = useCallback((e) => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container || !chartData.length) return;
+
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePos({ x: e.clientX, y: e.clientY });
+
+    const padding = 40;
+    const chartWidth = rect.width - (padding * 2);
+    const candleSpacing = chartWidth / chartData.length;
+    
+    const candleIndex = Math.floor((x - padding) / candleSpacing);
+    
+    if (candleIndex >= 0 && candleIndex < chartData.length) {
+      setHoveredCandle(candleIndex);
+    } else {
+      setHoveredCandle(null);
+    }
+  }, [chartData]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredCandle(null);
+  }, []);
 
   const formatXAxis = useCallback((timestamp) => {
     const date = new Date(timestamp);
@@ -161,8 +222,10 @@ const StockChart = React.memo(({ symbol }) => {
         <div ref={containerRef} className="w-full">
           <canvas
             ref={canvasRef}
-            className="w-full border border-terminal-border rounded"
+            className="w-full border border-terminal-border rounded cursor-crosshair"
             style={{ height: '250px' }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
           />
         </div>
       ) : (

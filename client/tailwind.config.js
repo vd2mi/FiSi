@@ -12,7 +12,7 @@ module.exports = {
           accent: 'var(--color-accent)',
           accentDark: 'var(--color-accent)',
           text: 'var(--color-accent)',
-          muted: '#6b7280',
+          muted: '#9ca3af',
           green: '#00ff00',
           red: '#ff0066',
         }

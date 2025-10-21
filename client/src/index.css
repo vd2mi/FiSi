@@ -111,13 +111,20 @@ code {
 }
 
 .drag-handle button,
-.drag-handle .flex {
+.drag-handle .flex,
+.drag-handle > div {
   pointer-events: auto;
 }
 
 .drag-handle button {
   position: relative;
   z-index: 10;
+}
+
+.header-tabs button {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 @keyframes flicker {
