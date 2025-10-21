@@ -14,8 +14,6 @@ module.exports = async (req, res) => {
   // Check for Alpaca API credentials
   const ALPACA_API_KEY = process.env.ALPACA_API_KEY_ID;
   const ALPACA_SECRET_KEY = process.env.ALPACA_API_SECRET_KEY;
-  // Default to paper trading (safer for most users)
-  const ALPACA_USE_PAPER = process.env.ALPACA_USE_PAPER !== 'false'; // defaults to true
 
   if (!ALPACA_API_KEY || !ALPACA_SECRET_KEY) {
     return res.status(500).json({ 
@@ -30,7 +28,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({ data: { strikes: chainData } });
 
       case 'expirations':
-        const expirations = await fetchAlpacaExpirations(symbol, ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_USE_PAPER);
+        const expirations = await fetchAlpacaExpirations(symbol, ALPACA_API_KEY, ALPACA_SECRET_KEY);
         return res.status(200).json({ data: expirations });
 
       default:
@@ -119,32 +117,30 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
   }
 }
 
-async function fetchAlpacaExpirations(symbol, apiKey, secretKey, usePaper = true) {
+async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
   try {
-    // Choose the correct API domain based on paper/live trading
-    const baseUrl = usePaper 
-      ? 'https://paper-api.alpaca.markets' 
-      : 'https://api.alpaca.markets';
-    
-    // Fetch option contracts to get available expirations
-    const response = await axios.get(`${baseUrl}/v2/options/contracts`, {
-      params: {
-        underlying_symbols: symbol,
-        limit: 1000
-      },
+    // Use Market Data API to fetch option snapshots (same endpoint as option chain)
+    // We'll extract expiration dates from the contract symbols
+    const response = await axios.get(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}`, {
       headers: {
         'APCA-API-KEY-ID': apiKey,
         'APCA-API-SECRET-KEY': secretKey
       }
     });
 
-    const contracts = response.data?.option_contracts || [];
+    const snapshots = response.data?.snapshots;
     
-    // Extract unique expiration dates
+    if (!snapshots || Object.keys(snapshots).length === 0) {
+      throw new Error('No option data available for this symbol');
+    }
+    
+    // Extract unique expiration dates from contract symbols
     const expirationSet = new Set();
-    contracts.forEach(contract => {
-      if (contract.expiration_date) {
-        expirationSet.add(contract.expiration_date);
+    
+    Object.keys(snapshots).forEach(contractSymbol => {
+      const contractInfo = parseAlpacaContractSymbol(contractSymbol, symbol);
+      if (contractInfo && contractInfo.expiration) {
+        expirationSet.add(contractInfo.expiration);
       }
     });
 
