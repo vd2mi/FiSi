@@ -107,6 +107,9 @@ const OptionsTab = React.memo(({ onClose }) => {
                   <div className="mt-1 text-terminal-accent">
                     ⚠️ OI's are not yet available, we are working on it and we value your patience
                   </div>
+                  <div className="mt-1 text-yellow-500">
+                    ℹ️ Greeks/IV only available for actively traded contracts (some strikes may only show data for calls or puts)
+                  </div>
                 </div>
               )}
             </div>
