@@ -91,15 +91,23 @@ const CryptoChart = React.memo(({ coinId }) => {
     const isGreen = close >= open;
     const color = isGreen ? '#00ff41' : '#ff0055';
     
-    const yAxis = props.yAxis;
-    if (!yAxis) return null;
-    
     const wickX = x + width / 2;
     
-    const highY = yAxis.scale(high);
-    const lowY = yAxis.scale(low);
-    const openY = yAxis.scale(open);
-    const closeY = yAxis.scale(close);
+    const allPrices = chartData.flatMap(d => [d.high, d.low, d.open, d.close]);
+    const minPrice = Math.min(...allPrices);
+    const maxPrice = Math.max(...allPrices);
+    const priceRange = maxPrice - minPrice;
+    
+    if (priceRange === 0) return null;
+    
+    const chartHeight = 250;
+    const padding = 20;
+    const usableHeight = chartHeight - (padding * 2);
+    
+    const highY = padding + ((maxPrice - high) / priceRange) * usableHeight;
+    const lowY = padding + ((maxPrice - low) / priceRange) * usableHeight;
+    const openY = padding + ((maxPrice - open) / priceRange) * usableHeight;
+    const closeY = padding + ((maxPrice - close) / priceRange) * usableHeight;
     
     const bodyTop = Math.min(openY, closeY);
     const bodyBottom = Math.max(openY, closeY);
@@ -118,7 +126,7 @@ const CryptoChart = React.memo(({ coinId }) => {
         />
       </g>
     );
-  }, []);
+  }, [chartData]);
 
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
