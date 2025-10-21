@@ -77,42 +77,37 @@ const StockChart = React.memo(({ symbol }) => {
   }), []);
 
   const renderCandlestick = useCallback((props) => {
-    const { x, y, width, height, index, payload } = props;
-    const data = payload;
+    const { x, width, payload } = props;
     
-    if (!data || !data.open || !data.close) return null;
+    if (!payload || !payload.open || !payload.close) return null;
 
-    const { open, close, high, low } = data;
+    const { open, close, high, low } = payload;
     const isGreen = close >= open;
     const color = isGreen ? '#00ff41' : '#ff0055';
     
+    const yAxis = props.yAxis;
+    if (!yAxis) return null;
+    
     const wickX = x + width / 2;
     
-    const candleRange = high - low;
-    if (candleRange === 0) {
-      const centerY = y + height / 2;
-      return (
-        <g key={`candle-${index}`}>
-          <line x1={x} y1={centerY} x2={x + width} y2={centerY} stroke={color} strokeWidth={1} />
-        </g>
-      );
-    }
+    const highY = yAxis.scale(high);
+    const lowY = yAxis.scale(low);
+    const openY = yAxis.scale(open);
+    const closeY = yAxis.scale(close);
     
-    const bodyTop = y + ((high - Math.max(open, close)) / candleRange) * height;
-    const bodyBottom = y + ((high - Math.min(open, close)) / candleRange) * height;
-    const bodyHeight = Math.abs(bodyBottom - bodyTop);
-    
-    const minBodyHeight = Math.max(bodyHeight, 1);
+    const bodyTop = Math.min(openY, closeY);
+    const bodyBottom = Math.max(openY, closeY);
+    const bodyHeight = Math.max(Math.abs(bodyBottom - bodyTop), 1);
 
     return (
-      <g key={`candle-${index}`}>
-        <line x1={wickX} y1={y} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
-        <line x1={wickX} y1={bodyBottom} x2={wickX} y2={y + height} stroke={color} strokeWidth={1} />
+      <g>
+        <line x1={wickX} y1={highY} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
+        <line x1={wickX} y1={bodyBottom} x2={wickX} y2={lowY} stroke={color} strokeWidth={1} />
         <rect 
           x={x + 1} 
-          y={Math.min(bodyTop, bodyBottom)} 
+          y={bodyTop} 
           width={Math.max(width - 2, 1)} 
-          height={minBodyHeight} 
+          height={bodyHeight} 
           fill={color} 
         />
       </g>
