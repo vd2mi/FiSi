@@ -77,9 +77,9 @@ const StockChart = React.memo(({ symbol }) => {
   }), []);
 
   const renderCandlestick = useCallback((props) => {
-    const { x, width, payload, yAxis } = props;
+    const { x, y, width, height, payload } = props;
     
-    if (!payload || !payload.open || !payload.close || !yAxis) return null;
+    if (!payload || !payload.open || !payload.close) return null;
 
     const { open, close, high, low } = payload;
     const isGreen = close >= open;
@@ -87,10 +87,20 @@ const StockChart = React.memo(({ symbol }) => {
     
     const wickX = x + width / 2;
     
-    const highY = yAxis.scale(high);
-    const lowY = yAxis.scale(low);
-    const openY = yAxis.scale(open);
-    const closeY = yAxis.scale(close);
+    const priceRange = high - low;
+    if (priceRange === 0) {
+      const centerY = y + height / 2;
+      return (
+        <g>
+          <line x1={x} y1={centerY} x2={x + width} y2={centerY} stroke={color} strokeWidth={1} />
+        </g>
+      );
+    }
+    
+    const highY = y;
+    const lowY = y + height;
+    const openY = y + ((high - open) / priceRange) * height;
+    const closeY = y + ((high - close) / priceRange) * height;
     
     const bodyTop = Math.min(openY, closeY);
     const bodyBottom = Math.max(openY, closeY);
@@ -146,7 +156,7 @@ const StockChart = React.memo(({ symbol }) => {
               style={{ fontSize: '12px' }}
             />
             <YAxis
-              domain={['dataMin', 'dataMax']}
+              domain={['auto', 'auto']}
               stroke="#6b7280"
               style={{ fontSize: '12px' }}
               tickFormatter={(value) => `$${value.toFixed(2)}`}
