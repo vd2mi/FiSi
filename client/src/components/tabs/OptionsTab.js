@@ -30,6 +30,8 @@ const OptionsTab = React.memo(({ onClose }) => {
     setLoading(true);
     try {
       const res = await optionsAPI.getChain(symbol, selectedExpiration);
+      console.log('Raw API response:', res.data);
+      console.log('First strike sample:', res.data.data?.strikes?.[0]);
       setOptionChain(res.data.data);
       setLastUpdate(new Date());
     } catch (error) {

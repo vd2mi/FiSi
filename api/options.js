@@ -63,6 +63,17 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
       throw new Error('No option data available for this symbol');
     }
 
+    // Log first snapshot for debugging
+    const firstKey = Object.keys(snapshots)[0];
+    console.log('First contract sample:', {
+      symbol: firstKey,
+      hasGreeks: !!snapshots[firstKey].greeks,
+      hasIV: !!snapshots[firstKey].impliedVolatility,
+      greeks: snapshots[firstKey].greeks,
+      iv: snapshots[firstKey].impliedVolatility,
+      fullSnapshot: JSON.stringify(snapshots[firstKey]).substring(0, 500)
+    });
+
     // Group options by strike price
     const strikeMap = {};
 
