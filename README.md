@@ -127,6 +127,7 @@ Professional-grade financial terminal for tracking stocks, options, cryptocurren
 - Git
 - Firebase project
 - API keys (Finnhub, Alpha Vantage, Alpaca Markets)
+  - **Alpaca:** Sign up at [alpaca.markets](https://alpaca.markets/) and use **Paper Trading** keys (free, no real money)
 
 ### **Setup**
 
@@ -203,8 +204,9 @@ cd client && npm start
 - `FINNHUB_API_KEY`
 - `ALPHAVANTAGE_API_KEY`
 - `COINGECKO_API_KEY`
-- `ALPACA_API_KEY_ID` (for options data)
-- `ALPACA_API_SECRET_KEY` (for options data)
+- `ALPACA_API_KEY_ID` (for options data - use paper trading keys)
+- `ALPACA_API_SECRET_KEY` (for options data - use paper trading keys)
+- `ALPACA_USE_PAPER` (optional, defaults to `true` for paper trading. Set to `false` for live trading)
 - Firebase Admin credentials
 
 **Render (WebSocket):**
