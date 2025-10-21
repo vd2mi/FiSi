@@ -60,7 +60,7 @@ const StockChart = React.memo(({ symbol }) => {
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 500,
+      height: 350,
       layout: {
         background: { color: '#0a0a0a' },
         textColor: '#9ca3af',
@@ -165,7 +165,7 @@ const StockChart = React.memo(({ symbol }) => {
       </div>
 
       {loading ? (
-        <div className="h-[500px] flex items-center justify-center text-terminal-muted">
+        <div className="h-[350px] flex items-center justify-center text-terminal-muted">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-terminal-accent border-t-transparent rounded-full animate-spin"></div>
             <div>Loading chart data...</div>
