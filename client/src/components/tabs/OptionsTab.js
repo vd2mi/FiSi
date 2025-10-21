@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, Search } from 'lucide-react';
+import { Activity, Search, RefreshCw } from 'lucide-react';
 import TabContainer from '../TabContainer';
 import { optionsAPI } from '../../services/api';
 
@@ -11,6 +11,7 @@ const OptionsTab = React.memo(({ onClose }) => {
   const [optionChain, setOptionChain] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hoveredOption, setHoveredOption] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(null);
 
   const loadExpirations = useCallback(async () => {
     try {
@@ -30,12 +31,17 @@ const OptionsTab = React.memo(({ onClose }) => {
     try {
       const res = await optionsAPI.getChain(symbol, selectedExpiration);
       setOptionChain(res.data.data);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Error loading option chain:', error);
     } finally {
       setLoading(false);
     }
   }, [symbol, selectedExpiration]);
+
+  const handleManualRefresh = () => {
+    loadOptionChain();
+  };
 
   useEffect(() => {
     loadExpirations();
@@ -44,6 +50,13 @@ const OptionsTab = React.memo(({ onClose }) => {
   useEffect(() => {
     if (selectedExpiration) {
       loadOptionChain();
+      
+      // Auto-refresh every 30 seconds
+      const interval = setInterval(() => {
+        loadOptionChain();
+      }, 30000);
+      
+      return () => clearInterval(interval);
     }
   }, [selectedExpiration, loadOptionChain]);
 
@@ -85,20 +98,37 @@ const OptionsTab = React.memo(({ onClose }) => {
       <div className="space-y-4">
         <div className="bg-terminal-bg rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-lg font-semibold text-terminal-text">{symbol} Options</h4>
-            {expirations.length > 0 && (
-              <select
-                value={selectedExpiration || ''}
-                onChange={(e) => setSelectedExpiration(e.target.value)}
-                className="px-3 py-1 text-sm bg-terminal-panel border border-terminal-border rounded text-terminal-text focus:outline-none focus:border-terminal-accent"
+            <div>
+              <h4 className="text-lg font-semibold text-terminal-text">{symbol} Options</h4>
+              {lastUpdate && (
+                <div className="text-xs text-terminal-muted mt-1">
+                  Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refreshing every 30s
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleManualRefresh}
+                disabled={loading}
+                className="p-2 rounded hover:bg-terminal-border text-terminal-muted hover:text-terminal-accent transition-colors disabled:opacity-50"
+                title="Refresh options data"
               >
-                {expirations.map((exp) => (
-                  <option key={exp} value={exp}>
-                    {exp}
-                  </option>
-                ))}
-              </select>
-            )}
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              </button>
+              {expirations.length > 0 && (
+                <select
+                  value={selectedExpiration || ''}
+                  onChange={(e) => setSelectedExpiration(e.target.value)}
+                  className="px-3 py-1 text-sm bg-terminal-panel border border-terminal-border rounded text-terminal-text focus:outline-none focus:border-terminal-accent"
+                >
+                  {expirations.map((exp) => (
+                    <option key={exp} value={exp}>
+                      {exp}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         </div>
 

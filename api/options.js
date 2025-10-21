@@ -11,152 +11,180 @@ module.exports = async (req, res) => {
 
   const { action, symbol, expiration } = req.query;
 
+  // Check for Alpaca API credentials
+  const ALPACA_API_KEY = process.env.ALPACA_API_KEY_ID;
+  const ALPACA_SECRET_KEY = process.env.ALPACA_API_SECRET_KEY;
+
+  if (!ALPACA_API_KEY || !ALPACA_SECRET_KEY) {
+    return res.status(500).json({ 
+      error: 'Alpaca API credentials not configured. Please set ALPACA_API_KEY_ID and ALPACA_API_SECRET_KEY environment variables.' 
+    });
+  }
+
   try {
     switch (action) {
       case 'chain':
-        const chainData = await fetchYahooOptions(symbol, expiration);
+        const chainData = await fetchAlpacaOptionChain(symbol, expiration, ALPACA_API_KEY, ALPACA_SECRET_KEY);
         return res.status(200).json({ data: { strikes: chainData } });
 
       case 'expirations':
-        const expirations = await fetchYahooExpirations(symbol);
+        const expirations = await fetchAlpacaExpirations(symbol, ALPACA_API_KEY, ALPACA_SECRET_KEY);
         return res.status(200).json({ data: expirations });
 
       default:
         return res.status(400).json({ error: 'Invalid action' });
     }
   } catch (error) {
-    return res.status(200).json({
-      data: action === 'expirations' 
-        ? generateExpirations() 
-        : { strikes: generateMockOptions(symbol) }
+    console.error('Alpaca API Error:', error.response?.data || error.message);
+    return res.status(500).json({ 
+      error: 'Failed to fetch options data from Alpaca', 
+      details: error.response?.data || error.message 
     });
   }
 };
 
-async function fetchYahooOptions(symbol, expiration) {
+async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
   try {
-    const response = await axios.get(`https://query2.finance.yahoo.com/v7/finance/options/${symbol}`, {
-      params: expiration ? { date: new Date(expiration).getTime() / 1000 } : {},
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+    // Fetch option chain snapshots from Alpaca
+    const response = await axios.get(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}`, {
+      headers: {
+        'APCA-API-KEY-ID': apiKey,
+        'APCA-API-SECRET-KEY': secretKey
+      }
     });
 
-    const optionData = response.data?.optionChain?.result?.[0];
-    if (!optionData) {
-      return generateMockOptions(symbol);
+    const snapshots = response.data?.snapshots;
+    
+    if (!snapshots || Object.keys(snapshots).length === 0) {
+      throw new Error('No option data available for this symbol');
     }
 
-    const calls = optionData.options?.[0]?.calls || [];
-    const puts = optionData.options?.[0]?.puts || [];
-
+    // Group options by strike price
     const strikeMap = {};
 
-    calls.forEach(call => {
-      const strike = call.strike;
+    Object.entries(snapshots).forEach(([contractSymbol, snapshot]) => {
+      // Parse contract symbol to extract strike, type, and expiration
+      // Alpaca format: AAPL250117C00100000 (symbol + YYMMDD + C/P + strike * 1000)
+      const contractInfo = parseAlpacaContractSymbol(contractSymbol, symbol);
+      
+      if (!contractInfo) return;
+
+      // Filter by expiration date if provided
+      if (expiration && contractInfo.expiration !== expiration) {
+        return;
+      }
+
+      const strike = contractInfo.strike;
+      const optionType = contractInfo.type; // 'call' or 'put'
+
       if (!strikeMap[strike]) {
         strikeMap[strike] = { strike, call: {}, put: {} };
       }
-      strikeMap[strike].call = {
-        bid: call.bid || 0,
-        ask: call.ask || 0,
-        volume: call.volume || 0,
-        openInterest: call.openInterest || 0,
-        impliedVolatility: call.impliedVolatility || 0.25,
-        delta: call.delta || 0.5,
-        gamma: call.gamma || 0.01,
-        theta: call.theta || -0.05,
-        vega: call.vega || 0.1
+
+      const latestQuote = snapshot.latestQuote || {};
+      const latestTrade = snapshot.latestTrade || {};
+      const greeks = snapshot.greeks || {};
+
+      strikeMap[strike][optionType] = {
+        bid: latestQuote.bp || 0,
+        ask: latestQuote.ap || 0,
+        lastPrice: latestTrade.p || 0,
+        volume: latestTrade.s || 0,
+        impliedVolatility: snapshot.impliedVolatility || greeks.implied_volatility || 0,
+        // Greeks
+        delta: greeks.delta || 0,
+        gamma: greeks.gamma || 0,
+        theta: greeks.theta || 0,
+        vega: greeks.vega || 0,
+        rho: greeks.rho || 0,
+        // Additional metadata
+        contractSymbol: contractSymbol,
+        expiration: contractInfo.expiration
       };
     });
 
-    puts.forEach(put => {
-      const strike = put.strike;
-      if (!strikeMap[strike]) {
-        strikeMap[strike] = { strike, call: {}, put: {} };
-      }
-      strikeMap[strike].put = {
-        bid: put.bid || 0,
-        ask: put.ask || 0,
-        volume: put.volume || 0,
-        openInterest: put.openInterest || 0,
-        impliedVolatility: put.impliedVolatility || 0.25,
-        delta: put.delta || -0.5,
-        gamma: put.gamma || 0.01,
-        theta: put.theta || -0.05,
-        vega: put.vega || 0.1
-      };
-    });
+    // Convert to array and sort by strike
+    const strikes = Object.values(strikeMap).sort((a, b) => a.strike - b.strike);
 
-    return Object.values(strikeMap).sort((a, b) => a.strike - b.strike);
+    if (strikes.length === 0) {
+      throw new Error('No options found for the specified criteria');
+    }
+
+    return strikes;
   } catch (error) {
-    return generateMockOptions(symbol);
+    console.error('Error fetching Alpaca option chain:', error.message);
+    throw error;
   }
 }
 
-async function fetchYahooExpirations(symbol) {
+async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
   try {
-    const response = await axios.get(`https://query2.finance.yahoo.com/v7/finance/options/${symbol}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-
-    const expirationTimestamps = response.data?.optionChain?.result?.[0]?.expirationDates || [];
-    return expirationTimestamps.map(ts => {
-      const date = new Date(ts * 1000);
-      return date.toISOString().split('T')[0];
-    });
-  } catch (error) {
-    return generateExpirations();
-  }
-}
-
-function generateExpirations() {
-  const dates = [];
-  const today = new Date();
-  
-  for (let i = 0; i < 12; i++) {
-    const friday = new Date(today);
-    friday.setDate(today.getDate() + (5 - today.getDay() + 7 * i));
-    dates.push(friday.toISOString().split('T')[0]);
-  }
-  
-  return dates;
-}
-
-function generateMockOptions(symbol) {
-  const basePrice = 150;
-  const strikes = [];
-  
-  for (let i = -10; i <= 10; i++) {
-    const strike = basePrice + (i * 5);
-    const distanceFromMoney = Math.abs(i);
-    
-    strikes.push({
-      strike,
-      call: {
-        bid: Math.max(0.1, (11 - distanceFromMoney) * Math.random() * 2),
-        ask: Math.max(0.2, (11 - distanceFromMoney) * Math.random() * 2 + 0.5),
-        volume: Math.floor(Math.random() * 1000),
-        openInterest: Math.floor(Math.random() * 5000),
-        impliedVolatility: 0.2 + Math.random() * 0.3,
-        delta: Math.max(0.01, Math.min(0.99, 0.5 + (i * 0.05))),
-        gamma: 0.01 + Math.random() * 0.02,
-        theta: -0.05 - Math.random() * 0.1,
-        vega: 0.1 + Math.random() * 0.2
+    // Fetch option contracts to get available expirations
+    const response = await axios.get('https://paper-api.alpaca.markets/v2/options/contracts', {
+      params: {
+        underlying_symbols: symbol,
+        limit: 1000
       },
-      put: {
-        bid: Math.max(0.1, (11 - distanceFromMoney) * Math.random() * 2),
-        ask: Math.max(0.2, (11 - distanceFromMoney) * Math.random() * 2 + 0.5),
-        volume: Math.floor(Math.random() * 1000),
-        openInterest: Math.floor(Math.random() * 5000),
-        impliedVolatility: 0.2 + Math.random() * 0.3,
-        delta: Math.max(-0.99, Math.min(-0.01, -0.5 + (i * 0.05))),
-        gamma: 0.01 + Math.random() * 0.02,
-        theta: -0.05 - Math.random() * 0.1,
-        vega: 0.1 + Math.random() * 0.2
+      headers: {
+        'APCA-API-KEY-ID': apiKey,
+        'APCA-API-SECRET-KEY': secretKey
       }
     });
+
+    const contracts = response.data?.option_contracts || [];
+    
+    // Extract unique expiration dates
+    const expirationSet = new Set();
+    contracts.forEach(contract => {
+      if (contract.expiration_date) {
+        expirationSet.add(contract.expiration_date);
+      }
+    });
+
+    // Convert to sorted array
+    const expirations = Array.from(expirationSet).sort();
+
+    if (expirations.length === 0) {
+      throw new Error('No expiration dates found for this symbol');
+    }
+
+    return expirations;
+  } catch (error) {
+    console.error('Error fetching Alpaca expirations:', error.message);
+    throw error;
   }
-  
-  return strikes;
 }
 
-//testing Deploymenttttttt
+function parseAlpacaContractSymbol(contractSymbol, underlyingSymbol) {
+  try {
+    // Alpaca option contract format: SYMBOL + YYMMDD + C/P + 8-digit strike price
+    // Example: AAPL250117C00150000 = AAPL expiring Jan 17, 2025, Call at $150
+    
+    const symbolLength = underlyingSymbol.length;
+    const remaining = contractSymbol.substring(symbolLength);
+    
+    // Extract date (YYMMDD)
+    const dateStr = remaining.substring(0, 6);
+    const year = '20' + dateStr.substring(0, 2);
+    const month = dateStr.substring(2, 4);
+    const day = dateStr.substring(4, 6);
+    const expiration = `${year}-${month}-${day}`;
+    
+    // Extract option type (C or P)
+    const typeChar = remaining.charAt(6);
+    const type = typeChar === 'C' ? 'call' : 'put';
+    
+    // Extract strike price (8 digits, divide by 1000)
+    const strikeStr = remaining.substring(7);
+    const strike = parseInt(strikeStr) / 1000;
+    
+    return {
+      expiration,
+      type,
+      strike
+    };
+  } catch (error) {
+    console.error('Error parsing contract symbol:', contractSymbol, error);
+    return null;
+  }
+}

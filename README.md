@@ -111,7 +111,7 @@ Professional-grade financial terminal for tracking stocks, options, cryptocurren
 - **Finnhub API** - Stock quotes, company data, financial news
 - **Alpha Vantage** - Historical OHLC candlestick data
 - **CoinGecko API** - Cryptocurrency market data
-- **Yahoo Finance** - Options chains with Greeks
+- **Alpaca Markets API** - Options chains with Greeks (Delta, Gamma, Theta, Vega, Rho)
 
 ### **Infrastructure**
 - **Vercel** - Frontend hosting + serverless functions
@@ -126,7 +126,7 @@ Professional-grade financial terminal for tracking stocks, options, cryptocurren
 - Node.js 16+
 - Git
 - Firebase project
-- API keys (Finnhub, Alpha Vantage)
+- API keys (Finnhub, Alpha Vantage, Alpaca Markets)
 
 ### **Setup**
 
@@ -203,6 +203,8 @@ cd client && npm start
 - `FINNHUB_API_KEY`
 - `ALPHAVANTAGE_API_KEY`
 - `COINGECKO_API_KEY`
+- `ALPACA_API_KEY_ID` (for options data)
+- `ALPACA_API_SECRET_KEY` (for options data)
 - Firebase Admin credentials
 
 **Render (WebSocket):**
@@ -249,7 +251,7 @@ Free tier limits and caching strategy:
 | Finnhub | 60/min | WebSocket reduces to ~10/min |
 | CoinGecko | 50/min | 10s cache |
 | Alpha Vantage | 25/day | Used for charts only |
-| Yahoo Finance | None | Direct scraping |
+| Alpaca Markets | 200/min | Options data with Greeks |
 
 ---
 
@@ -267,7 +269,7 @@ MIT License - See [LICENSE](LICENSE) file
 
 ## 🙏 **Credits**
 
-- **APIs:** Finnhub, Alpha Vantage, CoinGecko, Yahoo Finance
+- **APIs:** Finnhub, Alpha Vantage, CoinGecko, Alpaca Markets
 - **UI Libraries:** React Grid Layout, Recharts, Lucide React
 - **Infrastructure:** Vercel, Render, Firebase
 
