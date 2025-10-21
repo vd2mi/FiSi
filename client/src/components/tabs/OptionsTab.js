@@ -104,6 +104,9 @@ const OptionsTab = React.memo(({ onClose }) => {
               {lastUpdate && (
                 <div className="text-xs text-terminal-muted mt-1">
                   Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refreshing every 30s
+                  <div className="mt-1 text-terminal-accent">
+                    ⚠️ OI's are not yet available, we are working on it and we value your patience
+                  </div>
                 </div>
               )}
             </div>
@@ -162,7 +165,11 @@ const OptionsTab = React.memo(({ onClose }) => {
               </thead>
               <tbody>
                 {optionChain.strikes
-                  .filter(strike => strike.call.hasGreeks || strike.put.hasGreeks)
+                  .filter(strike => {
+                    const callHasData = strike.call.delta !== null && strike.call.impliedVolatility > 0;
+                    const putHasData = strike.put.delta !== null && strike.put.impliedVolatility > 0;
+                    return callHasData || putHasData;
+                  })
                   .slice(0, 20)
                   .map((strike, index) => (
                   <tr key={index} className="border-b border-terminal-border/50 hover:bg-terminal-panel relative">
