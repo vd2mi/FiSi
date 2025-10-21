@@ -30,15 +30,6 @@ const OptionsTab = React.memo(({ onClose }) => {
     setLoading(true);
     try {
       const res = await optionsAPI.getChain(symbol, selectedExpiration);
-      console.log('Raw API response:', res.data);
-      console.log('First strike sample:', res.data.data?.strikes?.[0]);
-      console.log('All strikes:', res.data.data?.strikes?.map(s => ({ 
-        strike: s.strike, 
-        callIV: s.call.impliedVolatility,
-        callDelta: s.call.delta,
-        putIV: s.put.impliedVolatility 
-      })));
-      console.log('Visible strikes (5-15):', res.data.data?.strikes?.slice(5, 15).map(s => s.strike));
       setOptionChain(res.data.data);
       setLastUpdate(new Date());
     } catch (error) {
@@ -170,7 +161,10 @@ const OptionsTab = React.memo(({ onClose }) => {
                 </tr>
               </thead>
               <tbody>
-                {optionChain.strikes.slice(5, 15).map((strike, index) => (
+                {optionChain.strikes
+                  .filter(strike => strike.call.hasGreeks || strike.put.hasGreeks)
+                  .slice(0, 20)
+                  .map((strike, index) => (
                   <tr key={index} className="border-b border-terminal-border/50 hover:bg-terminal-panel relative">
                     <td 
                       className="py-2 text-terminal-green cursor-pointer"
