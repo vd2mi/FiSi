@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { stocksAPI } from '../services/api';
 
 const StockChart = React.memo(({ symbol }) => {
   const [chartData, setChartData] = useState([]);
   const [timeframe, setTimeframe] = useState('1D');
   const [loading, setLoading] = useState(false);
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
 
   const loadChartData = useCallback(async () => {
     setLoading(true);
@@ -31,7 +32,6 @@ const StockChart = React.memo(({ symbol }) => {
           high: data.h[i],
           low: data.l[i],
           close: data.c[i],
-          range: [data.l[i], data.h[i]],
         }));
         setChartData(formatted);
       } else {
@@ -52,6 +52,78 @@ const StockChart = React.memo(({ symbol }) => {
     }
   }, [symbol, loadChartData]);
 
+  const drawChart = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container || !chartData.length) return;
+
+    const ctx = canvas.getContext('2d');
+    const rect = container.getBoundingClientRect();
+    const width = rect.width;
+    const height = 250;
+    
+    canvas.width = width;
+    canvas.height = height;
+
+    const padding = 40;
+    const chartWidth = width - (padding * 2);
+    const chartHeight = height - (padding * 2);
+
+    const prices = chartData.flatMap(d => [d.high, d.low]);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const priceRange = maxPrice - minPrice;
+
+    if (priceRange === 0) return;
+
+    const candleWidth = Math.max(chartWidth / chartData.length - 2, 1);
+    const candleSpacing = chartWidth / chartData.length;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = '#6b7280';
+    ctx.lineWidth = 1;
+
+    chartData.forEach((candle, index) => {
+      const x = padding + (index * candleSpacing) + (candleSpacing / 2);
+      const isGreen = candle.close >= candle.open;
+      const color = isGreen ? '#00ff41' : '#ff0055';
+
+      const highY = padding + ((maxPrice - candle.high) / priceRange) * chartHeight;
+      const lowY = padding + ((maxPrice - candle.low) / priceRange) * chartHeight;
+      const openY = padding + ((maxPrice - candle.open) / priceRange) * chartHeight;
+      const closeY = padding + ((maxPrice - candle.close) / priceRange) * chartHeight;
+
+      const bodyTop = Math.min(openY, closeY);
+      const bodyBottom = Math.max(openY, closeY);
+      const bodyHeight = Math.max(Math.abs(bodyBottom - bodyTop), 1);
+
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+
+      ctx.beginPath();
+      ctx.moveTo(x, highY);
+      ctx.lineTo(x, bodyTop);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, bodyBottom);
+      ctx.lineTo(x, lowY);
+      ctx.stroke();
+
+      ctx.fillRect(x - candleWidth/2, bodyTop, candleWidth, bodyHeight);
+    });
+  }, [chartData]);
+
+  useEffect(() => {
+    drawChart();
+  }, [drawChart]);
+
+  useEffect(() => {
+    const handleResize = () => drawChart();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [drawChart]);
+
   const formatXAxis = useCallback((timestamp) => {
     const date = new Date(timestamp);
     if (timeframe === '1D') {
@@ -59,56 +131,6 @@ const StockChart = React.memo(({ symbol }) => {
     }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }, [timeframe]);
-
-  const CustomTooltip = useMemo(() => React.memo(({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-terminal-panel border border-terminal-border rounded p-2 text-xs">
-          <p className="text-terminal-muted mb-1">{new Date(data.time).toLocaleString()}</p>
-          <p className="text-terminal-text">O: ${data.open?.toFixed(2)}</p>
-          <p className="text-terminal-text">H: ${data.high?.toFixed(2)}</p>
-          <p className="text-terminal-text">L: ${data.low?.toFixed(2)}</p>
-          <p className="text-terminal-text">C: ${data.close?.toFixed(2)}</p>
-        </div>
-      );
-    }
-    return null;
-  }), []);
-
-  const renderCandlestick = useMemo(() => {
-    return (props) => {
-      const { x, y, width, height, index } = props;
-      const data = chartData[index];
-      
-      if (!data || !data.open || !data.close) return null;
-
-      const { open, close, high, low } = data;
-      const isGreen = close >= open;
-      const color = isGreen ? '#00ff41' : '#ff0055';
-      
-      const maxPrice = Math.max(open, close);
-      const minPrice = Math.min(open, close);
-      const priceRange = high - low;
-      
-      if (priceRange === 0) return null;
-
-      const wickX = x + width / 2;
-      const bodyTop = y + ((high - maxPrice) / priceRange) * height;
-      const bodyBottom = y + ((high - minPrice) / priceRange) * height;
-      const bodyHeight = bodyBottom - bodyTop;
-      const wickTop = y;
-      const wickBottom = y + height;
-
-      return (
-        <g key={`candle-${index}`}>
-          <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
-          <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
-          <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
-        </g>
-      );
-    };
-  }, [chartData]);
 
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
@@ -136,24 +158,13 @@ const StockChart = React.memo(({ symbol }) => {
           Loading chart...
         </div>
       ) : chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={250}>
-          <ComposedChart data={chartData}>
-            <XAxis
-              dataKey="time"
-              tickFormatter={formatXAxis}
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
-            />
-            <YAxis
-              domain={['dataMin', 'dataMax']}
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
-              tickFormatter={(value) => `$${value.toFixed(2)}`}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="range" shape={renderCandlestick} />
-          </ComposedChart>
-        </ResponsiveContainer>
+        <div ref={containerRef} className="w-full">
+          <canvas
+            ref={canvasRef}
+            className="w-full border border-terminal-border rounded"
+            style={{ height: '250px' }}
+          />
+        </div>
       ) : (
         <div className="h-64 flex items-center justify-center">
           <div className="text-center">

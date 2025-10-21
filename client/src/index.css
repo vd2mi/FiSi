@@ -102,9 +102,22 @@ code {
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid var(--color-accent);
-  border-bottom: 2px solid var(--color-accent);
-  box-shadow: 0 0 3px var(--color-accent);
+  background: var(--color-accent);
+  border-radius: 1px;
+}
+
+.drag-handle {
+  pointer-events: none;
+}
+
+.drag-handle button,
+.drag-handle .flex {
+  pointer-events: auto;
+}
+
+.drag-handle button {
+  position: relative;
+  z-index: 10;
 }
 
 @keyframes flicker {

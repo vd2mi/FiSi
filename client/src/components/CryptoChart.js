@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { cryptoAPI } from '../services/api';
 
 const CryptoChart = React.memo(({ coinId }) => {
   const [chartData, setChartData] = useState([]);
   const [timeframe, setTimeframe] = useState(7);
   const [loading, setLoading] = useState(false);
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
 
   const loadChartData = useCallback(async () => {
     setLoading(true);
@@ -26,13 +27,11 @@ const CryptoChart = React.memo(({ coinId }) => {
               high: price,
               low: price,
               close: price,
-              range: [price, price],
             };
           } else {
             candles[candleTime].high = Math.max(candles[candleTime].high, price);
             candles[candleTime].low = Math.min(candles[candleTime].low, price);
             candles[candleTime].close = price;
-            candles[candleTime].range = [candles[candleTime].low, candles[candleTime].high];
           }
         });
         
@@ -52,69 +51,91 @@ const CryptoChart = React.memo(({ coinId }) => {
     }
   }, [coinId, loadChartData]);
 
-  const formatXAxis = useCallback((timestamp) => {
-    const date = new Date(timestamp);
-    if (timeframe === 1) {
-      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    }
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }, [timeframe]);
+  const drawChart = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container || !chartData.length) return;
+
+    const ctx = canvas.getContext('2d');
+    const rect = container.getBoundingClientRect();
+    const width = rect.width;
+    const height = 250;
+    
+    canvas.width = width;
+    canvas.height = height;
+
+    const padding = 40;
+    const chartWidth = width - (padding * 2);
+    const chartHeight = height - (padding * 2);
+
+    const prices = chartData.flatMap(d => [d.high, d.low]);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const priceRange = maxPrice - minPrice;
+
+    if (priceRange === 0) return;
+
+    const candleWidth = Math.max(chartWidth / chartData.length - 2, 1);
+    const candleSpacing = chartWidth / chartData.length;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = '#6b7280';
+    ctx.lineWidth = 1;
+
+    chartData.forEach((candle, index) => {
+      const x = padding + (index * candleSpacing) + (candleSpacing / 2);
+      const isGreen = candle.close >= candle.open;
+      const color = isGreen ? '#00ff41' : '#ff0055';
+
+      const highY = padding + ((maxPrice - candle.high) / priceRange) * chartHeight;
+      const lowY = padding + ((maxPrice - candle.low) / priceRange) * chartHeight;
+      const openY = padding + ((maxPrice - candle.open) / priceRange) * chartHeight;
+      const closeY = padding + ((maxPrice - candle.close) / priceRange) * chartHeight;
+
+      const bodyTop = Math.min(openY, closeY);
+      const bodyBottom = Math.max(openY, closeY);
+      const bodyHeight = Math.max(Math.abs(bodyBottom - bodyTop), 1);
+
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+
+      ctx.beginPath();
+      ctx.moveTo(x, highY);
+      ctx.lineTo(x, bodyTop);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, bodyBottom);
+      ctx.lineTo(x, lowY);
+      ctx.stroke();
+
+      ctx.fillRect(x - candleWidth/2, bodyTop, candleWidth, bodyHeight);
+    });
+  }, [chartData]);
+
+  useEffect(() => {
+    drawChart();
+  }, [drawChart]);
+
+  useEffect(() => {
+    const handleResize = () => drawChart();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [drawChart]);
 
   const formatPrice = useCallback((price) => {
-    if (!price) return '--';
-    if (price < 1) return `$${price.toFixed(6)}`;
-    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (price >= 1) return `$${price.toFixed(2)}`;
+    if (price >= 0.01) return `$${price.toFixed(4)}`;
+    return `$${price.toFixed(8)}`;
   }, []);
 
-  const CustomTooltip = useMemo(() => React.memo(({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-terminal-panel border border-terminal-border rounded p-2 text-xs">
-          <p className="text-terminal-muted mb-1">{new Date(data.time).toLocaleString()}</p>
-          <p className="text-terminal-text">O: {formatPrice(data.open)}</p>
-          <p className="text-terminal-text">H: {formatPrice(data.high)}</p>
-          <p className="text-terminal-text">L: {formatPrice(data.low)}</p>
-          <p className="text-terminal-text">C: {formatPrice(data.close)}</p>
-        </div>
-      );
+  const formatXAxis = useCallback((timestamp) => {
+    const date = new Date(timestamp);
+    if (timeframe <= 7) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
-    return null;
-  }), [formatPrice]);
-
-  const renderCandlestick = useMemo(() => {
-    return (props) => {
-      const { x, y, width, height, index } = props;
-      const data = chartData[index];
-      
-      if (!data || !data.open || !data.close) return null;
-
-      const { open, close, high, low } = data;
-      const isGreen = close >= open;
-      const color = isGreen ? '#00ff41' : '#ff0055';
-      
-      const maxPrice = Math.max(open, close);
-      const minPrice = Math.min(open, close);
-      const priceRange = high - low;
-      
-      if (priceRange === 0) return null;
-
-      const wickX = x + width / 2;
-      const bodyTop = y + ((high - maxPrice) / priceRange) * height;
-      const bodyBottom = y + ((high - minPrice) / priceRange) * height;
-      const bodyHeight = bodyBottom - bodyTop;
-      const wickTop = y;
-      const wickBottom = y + height;
-
-      return (
-        <g key={`candle-${index}`}>
-          <line x1={wickX} y1={wickTop} x2={wickX} y2={bodyTop} stroke={color} strokeWidth={1} />
-          <line x1={wickX} y1={bodyBottom} x2={wickX} y2={wickBottom} stroke={color} strokeWidth={1} />
-          <rect x={x + 1} y={bodyTop} width={Math.max(width - 2, 1)} height={Math.max(bodyHeight, 1)} fill={color} />
-        </g>
-      );
-    };
-  }, [chartData]);
+    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  }, [timeframe]);
 
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
@@ -147,32 +168,19 @@ const CryptoChart = React.memo(({ coinId }) => {
           Loading chart...
         </div>
       ) : chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={250}>
-          <ComposedChart data={chartData}>
-            <XAxis
-              dataKey="time"
-              tickFormatter={formatXAxis}
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
-            />
-            <YAxis
-              domain={['dataMin', 'dataMax']}
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
-              tickFormatter={(value) => formatPrice(value)}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="range" shape={renderCandlestick} />
-          </ComposedChart>
-        </ResponsiveContainer>
+        <div ref={containerRef} className="w-full">
+          <canvas
+            ref={canvasRef}
+            className="w-full border border-terminal-border rounded"
+            style={{ height: '250px' }}
+          />
+        </div>
       ) : (
         <div className="h-64 flex items-center justify-center">
           <div className="text-center">
             <div className="text-terminal-muted mb-2">📊 Chart data not available</div>
             <div className="text-xs text-terminal-muted">
-              Add COINGECKO_API_KEY to server/.env
-              <br />
-              Real-time prices are updating above! ✅
+              Unable to load chart data for this cryptocurrency.
             </div>
           </div>
         </div>
