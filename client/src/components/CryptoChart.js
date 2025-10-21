@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { createChart } from 'lightweight-charts';
+import { createChart, CandlestickSeries, HistogramSeries } from 'lightweight-charts';
 import { cryptoAPI } from '../services/api';
 
 const CryptoChart = React.memo(({ coinId }) => {
@@ -123,7 +123,7 @@ const CryptoChart = React.memo(({ coinId }) => {
       },
     });
 
-    const candleSeries = chart.addSeries('Candlestick', {
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#00ff41',
       downColor: '#ff0055',
       borderUpColor: '#00ff41',
@@ -132,7 +132,7 @@ const CryptoChart = React.memo(({ coinId }) => {
       wickDownColor: '#ff0055',
     });
 
-    const volumeSeries = chart.addSeries('Histogram', {
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       color: '#26a69a',
       priceFormat: {
         type: 'volume',
