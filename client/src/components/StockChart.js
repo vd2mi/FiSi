@@ -104,20 +104,38 @@ const StockChart = React.memo(({ symbol }) => {
     });
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
-      color: '#26a69a',
+      color: 'rgba(38, 166, 154, 0.25)',
       priceFormat: {
         type: 'volume',
       },
       priceScaleId: '',
       scaleMargins: {
-        top: 0.9,
+        top: 0.97,
         bottom: 0,
       },
+      base: 0,
     });
 
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
+
+    // Keep volume anchored to the bottom by forcing min to 0
+    if (volumeSeries && typeof volumeSeries.setAutoscaleInfoProvider === 'function') {
+      volumeSeries.setAutoscaleInfoProvider((original) => {
+        const res = original();
+        if (res && res.priceRange) {
+          return {
+            ...res,
+            priceRange: {
+              minValue: 0,
+              maxValue: res.priceRange.maxValue,
+            },
+          };
+        }
+        return res;
+      });
+    }
 
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
@@ -142,6 +160,15 @@ const StockChart = React.memo(({ symbol }) => {
       loadChartData();
     }
   }, [symbol, loadChartData]);
+
+  useEffect(() => {
+    if (!symbol) return;
+    const intervalId = setInterval(() => {
+      loadChartData();
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [symbol, timeframe, loadChartData]);
 
   return (
     <div className="bg-terminal-bg rounded-lg p-4">
