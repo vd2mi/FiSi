@@ -61,8 +61,12 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
     const contracts = contractsResponse.data?.contracts;
     
     if (!contracts || contracts.length === 0) {
+      console.error('No contracts found in response:', contractsResponse.data);
       throw new Error('No option data available for this symbol');
     }
+    
+    console.log(`Found ${contracts.length} contracts for ${symbol}`);
+    console.log('Sample contract:', JSON.stringify(contracts[0], null, 2));
 
     // Fetch latest quotes for all contracts in batches (limit is typically 100)
     const BATCH_SIZE = 100;
