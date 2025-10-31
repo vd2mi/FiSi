@@ -136,9 +136,16 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
       throw new Error('No option data available for this symbol');
     }
     
+    const zeroDTESymbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'SPX', 'NDX', 'RUT'];
+    const isZeroDTE = zeroDTESymbols.includes(symbol.toUpperCase());
+    
     const expirationSet = new Set();
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to midnight for date comparison
+    today.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() + 7);
+    endOfWeek.setHours(23, 59, 59, 999);
     
     Object.keys(snapshots).forEach(contractSymbol => {
       const contractInfo = parseAlpacaContractSymbol(contractSymbol, symbol);
@@ -146,8 +153,14 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
         const expirationDate = new Date(contractInfo.expiration);
         expirationDate.setHours(0, 0, 0, 0);
         
-        // Only add expirations that are in the future (not today)
-        if (expirationDate > today) {
+        const isToday = expirationDate.getTime() === today.getTime();
+        const isThisWeek = expirationDate >= today && expirationDate <= endOfWeek;
+        
+        if (isToday && isZeroDTE) {
+          expirationSet.add(contractInfo.expiration);
+        } else if (isThisWeek) {
+          expirationSet.add(contractInfo.expiration);
+        } else if (expirationDate > today) {
           expirationSet.add(contractInfo.expiration);
         }
       }

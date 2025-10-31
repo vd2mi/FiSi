@@ -18,11 +18,16 @@ const OptionsTab = React.memo(({ onClose }) => {
       const res = await optionsAPI.getExpirations(symbol);
       const exps = res.data.data || [];
       setExpirations(exps);
-      if (exps.length > 0 && !selectedExpiration) {
-        setSelectedExpiration(exps[0]);
+      if (exps.length > 0) {
+        if (!selectedExpiration || !exps.includes(selectedExpiration)) {
+          setSelectedExpiration(exps[0]);
+        }
+      } else {
+        setSelectedExpiration(null);
       }
     } catch (error) {
       console.error('Error loading expirations:', error);
+      setSelectedExpiration(null);
     }
   }, [symbol, selectedExpiration]);
 
@@ -51,7 +56,6 @@ const OptionsTab = React.memo(({ onClose }) => {
     if (selectedExpiration) {
       loadOptionChain();
       
-      // Auto-refresh every 30 seconds
       const interval = setInterval(() => {
         loadOptionChain();
       }, 30000);
@@ -71,6 +75,33 @@ const OptionsTab = React.memo(({ onClose }) => {
   const formatNumber = (num, decimals = 2) => {
     if (num === null || num === undefined) return 'N/A';
     return num.toFixed(decimals);
+  };
+
+  const formatExpirationDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expDate = new Date(date);
+    expDate.setHours(0, 0, 0, 0);
+    
+    const isToday = expDate.getTime() === today.getTime();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayName = dayNames[date.getDay()];
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    
+    if (isToday) {
+      return `${dateStr} (Today - ${dayName})`;
+    }
+    return `${dateStr} (${dayName})`;
+  };
+
+  const isTodayExpiration = (dateStr) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expDate = new Date(dateStr);
+    expDate.setHours(0, 0, 0, 0);
+    return expDate.getTime() === today.getTime();
   };
 
   return (
@@ -109,6 +140,11 @@ const OptionsTab = React.memo(({ onClose }) => {
                   </div>
                 </div>
               )}
+              {selectedExpiration && isTodayExpiration(selectedExpiration) && (
+                <div className="mt-2 px-3 py-2 bg-yellow-900/20 border border-yellow-700/50 rounded text-xs text-yellow-400">
+                  <strong>Note:</strong> Options expiring today may not always display correctly. If you encounter issues, please try selecting another expiration date.
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -127,7 +163,7 @@ const OptionsTab = React.memo(({ onClose }) => {
                 >
                   {expirations.map((exp) => (
                     <option key={exp} value={exp}>
-                      {exp}
+                      {formatExpirationDate(exp)}
                     </option>
                   ))}
                 </select>

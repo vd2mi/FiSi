@@ -120,7 +120,6 @@ const StockChart = React.memo(({ symbol }) => {
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
 
-    // Keep volume anchored to the bottom by forcing min to 0
     if (volumeSeries && typeof volumeSeries.setAutoscaleInfoProvider === 'function') {
       volumeSeries.setAutoscaleInfoProvider((original) => {
         const res = original();

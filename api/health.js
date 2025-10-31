@@ -25,7 +25,6 @@ module.exports = async (req, res) => {
     message: 'FiSi API is running'
   };
 
-  // Check if APIs are missing
   const warnings = [];
   if (!process.env.FINNHUB_API_KEY) {
     warnings.push('FINNHUB_API_KEY not set - stock prices will not work');
