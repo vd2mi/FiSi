@@ -44,10 +44,12 @@ module.exports = async (req, res) => {
 
 async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
   try {
-    const response = await axios.get(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}`, {
+    // First, get all option contracts for this underlying symbol
+    const contractsResponse = await axios.get('https://data.alpaca.markets/v2/options/contracts', {
       params: {
-        feed: 'indicative',
-        limit: 1000
+        underlying_symbol: symbol,
+        limit: 1000,
+        expiration_date: expiration || undefined
       },
       headers: {
         'accept': 'application/json',
@@ -56,50 +58,78 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
       }
     });
 
-    const snapshots = response.data?.snapshots;
+    const contracts = contractsResponse.data?.contracts;
     
-    if (!snapshots || Object.keys(snapshots).length === 0) {
+    if (!contracts || contracts.length === 0) {
       throw new Error('No option data available for this symbol');
     }
 
+    // Fetch latest quotes for all contracts in batches (limit is typically 100)
+    const BATCH_SIZE = 100;
+    const quotes = {};
+    
+    for (let i = 0; i < contracts.length; i += BATCH_SIZE) {
+      const batch = contracts.slice(i, i + BATCH_SIZE);
+      const identifiers = batch.map(c => c.name).join(',');
+      
+      try {
+        const quotesResponse = await axios.get('https://data.alpaca.markets/v2/options/latest/quotes', {
+          params: {
+            feed: 'opra',
+            identifiers: identifiers
+          },
+          headers: {
+            'accept': 'application/json',
+            'APCA-API-KEY-ID': apiKey,
+            'APCA-API-SECRET-KEY': secretKey
+          }
+        });
+        
+        if (quotesResponse.data?.quotes) {
+          Object.assign(quotes, quotesResponse.data.quotes);
+        }
+      } catch (error) {
+        console.error(`Error fetching batch ${i / BATCH_SIZE + 1}:`, error.message);
+        // Continue with other batches even if one fails
+      }
+    }
+
+    // Build strike map
     const strikeMap = {};
 
-    Object.entries(snapshots).forEach(([contractSymbol, snapshot]) => {
-      const contractInfo = parseAlpacaContractSymbol(contractSymbol, symbol);
-      
-      if (!contractInfo) return;
+    contracts.forEach(contract => {
+      const strike = parseFloat(contract.strike_price);
+      const optionType = contract.type === 'call' ? 'call' : 'put';
+      const contractExpiration = contract.expiration_date;
 
-      if (expiration && contractInfo.expiration !== expiration) {
+      // Filter by expiration if specified
+      if (expiration && contractExpiration !== expiration) {
         return;
       }
-
-      const strike = contractInfo.strike;
-      const optionType = contractInfo.type;
 
       if (!strikeMap[strike]) {
         strikeMap[strike] = { strike, call: {}, put: {} };
       }
 
-      const latestQuote = snapshot.latestQuote || {};
-      const latestTrade = snapshot.latestTrade || {};
-      const greeks = snapshot.greeks || {};
-      const impliedVol = snapshot.impliedVolatility || 0;
+      const quote = quotes[contract.name] || {};
+      const latestTrade = quote.trade || {};
+      const greeks = quote.greeks || {};
 
       strikeMap[strike][optionType] = {
-        bid: latestQuote.bp || 0,
-        ask: latestQuote.ap || 0,
-        lastPrice: latestTrade.p || 0,
-        volume: latestTrade.s || 0,
-        openInterest: 0,
-        impliedVolatility: impliedVol,
+        bid: quote.bid_price || 0,
+        ask: quote.ask_price || 0,
+        lastPrice: quote.last_quote?.last_price || 0,
+        volume: latestTrade.size || 0,
+        openInterest: contract.open_interest || 0,
+        impliedVolatility: quote.implied_volatility || 0,
         delta: greeks.delta !== undefined ? greeks.delta : null,
         gamma: greeks.gamma !== undefined ? greeks.gamma : null,
         theta: greeks.theta !== undefined ? greeks.theta : null,
         vega: greeks.vega !== undefined ? greeks.vega : null,
         rho: greeks.rho !== undefined ? greeks.rho : null,
-        contractSymbol: contractSymbol,
-        expiration: contractInfo.expiration,
-        hasGreeks: !!snapshot.greeks
+        contractSymbol: contract.name,
+        expiration: contractExpiration,
+        hasGreeks: !!quote.greeks
       };
     });
 
@@ -112,15 +142,20 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
     return strikes;
   } catch (error) {
     console.error('Error fetching Alpaca option chain:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     throw error;
   }
 }
 
 async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
   try {
-    const response = await axios.get(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}`, {
+    // Get all option contracts for this underlying symbol to extract expiration dates
+    const response = await axios.get('https://data.alpaca.markets/v2/options/contracts', {
       params: {
-        feed: 'indicative',
+        underlying_symbol: symbol,
         limit: 1000
       },
       headers: {
@@ -130,18 +165,17 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
       }
     });
 
-    const snapshots = response.data?.snapshots;
+    const contracts = response.data?.contracts;
     
-    if (!snapshots || Object.keys(snapshots).length === 0) {
+    if (!contracts || contracts.length === 0) {
       throw new Error('No option data available for this symbol');
     }
     
     const expirationSet = new Set();
     
-    Object.keys(snapshots).forEach(contractSymbol => {
-      const contractInfo = parseAlpacaContractSymbol(contractSymbol, symbol);
-      if (contractInfo && contractInfo.expiration) {
-        expirationSet.add(contractInfo.expiration);
+    contracts.forEach(contract => {
+      if (contract.expiration_date) {
+        expirationSet.add(contract.expiration_date);
       }
     });
 
@@ -154,34 +188,11 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
     return expirations;
   } catch (error) {
     console.error('Error fetching Alpaca expirations:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     throw error;
   }
 }
 
-function parseAlpacaContractSymbol(contractSymbol, underlyingSymbol) {
-  try {
-    const symbolLength = underlyingSymbol.length;
-    const remaining = contractSymbol.substring(symbolLength);
-    
-    const dateStr = remaining.substring(0, 6);
-    const year = '20' + dateStr.substring(0, 2);
-    const month = dateStr.substring(2, 4);
-    const day = dateStr.substring(4, 6);
-    const expiration = `${year}-${month}-${day}`;
-    
-    const typeChar = remaining.charAt(6);
-    const type = typeChar === 'C' ? 'call' : 'put';
-    
-    const strikeStr = remaining.substring(7);
-    const strike = parseInt(strikeStr) / 1000;
-    
-    return {
-      expiration,
-      type,
-      strike
-    };
-  } catch (error) {
-    console.error('Error parsing contract symbol:', contractSymbol, error);
-    return null;
-  }
-}
