@@ -85,15 +85,11 @@ const OptionsTab = React.memo(({ onClose }) => {
     expDate.setHours(0, 0, 0, 0);
     
     const isToday = expDate.getTime() === today.getTime();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const dayName = dayNames[date.getDay()];
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
     
     if (isToday) {
-      return `${dateStr} (Today - ${dayName})`;
+      return `${dateStr} (Today)`;
     }
-    return `${dateStr} (${dayName})`;
+    return dateStr;
   };
 
   const isTodayExpiration = (dateStr) => {
