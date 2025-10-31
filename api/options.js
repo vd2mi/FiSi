@@ -137,11 +137,19 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
     }
     
     const expirationSet = new Set();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to midnight for date comparison
     
     Object.keys(snapshots).forEach(contractSymbol => {
       const contractInfo = parseAlpacaContractSymbol(contractSymbol, symbol);
       if (contractInfo && contractInfo.expiration) {
-        expirationSet.add(contractInfo.expiration);
+        const expirationDate = new Date(contractInfo.expiration);
+        expirationDate.setHours(0, 0, 0, 0);
+        
+        // Only add expirations that are in the future (not today)
+        if (expirationDate > today) {
+          expirationSet.add(contractInfo.expiration);
+        }
       }
     });
 
