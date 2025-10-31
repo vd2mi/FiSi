@@ -169,9 +169,13 @@ async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
       }
     });
 
+    console.log('Response data keys:', Object.keys(response.data || {}));
+    console.log('Response data:', JSON.stringify(response.data, null, 2));
+    
     const contracts = response.data?.contracts;
     
     if (!contracts || contracts.length === 0) {
+      console.error('No contracts found in response for symbol:', symbol);
       throw new Error('No option data available for this symbol');
     }
     
