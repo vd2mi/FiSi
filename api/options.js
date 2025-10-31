@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
 async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
   try {
     // First, get all option contracts for this underlying symbol
-    const contractsResponse = await axios.get('https://data.alpaca.markets/v2/options/contracts', {
+    const contractsResponse = await axios.get('https://paper-api.alpaca.markets/v2/options/contracts', {
       params: {
         underlying_symbol: symbol,
         limit: 1000,
@@ -73,7 +73,7 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
       const identifiers = batch.map(c => c.name).join(',');
       
       try {
-        const quotesResponse = await axios.get('https://data.alpaca.markets/v2/options/latest/quotes', {
+        const quotesResponse = await axios.get('https://paper-api.alpaca.markets/v2/options/latest/quotes', {
           params: {
             feed: 'opra',
             identifiers: identifiers
@@ -153,7 +153,7 @@ async function fetchAlpacaOptionChain(symbol, expiration, apiKey, secretKey) {
 async function fetchAlpacaExpirations(symbol, apiKey, secretKey) {
   try {
     // Get all option contracts for this underlying symbol to extract expiration dates
-    const response = await axios.get('https://data.alpaca.markets/v2/options/contracts', {
+    const response = await axios.get('https://paper-api.alpaca.markets/v2/options/contracts', {
       params: {
         underlying_symbol: symbol,
         limit: 1000
