@@ -27,10 +27,8 @@ module.exports = async (req, res) => {
   }
 
   const { action, symbol, resolution, from, to, q } = req.query;
-
   try {
     let response;
-    let candlesProvider = null;
 
     switch (action) {
       case 'quote':
@@ -47,7 +45,6 @@ module.exports = async (req, res) => {
 
       case 'candles':
         if (ALPHAVANTAGE_API_KEY) {
-          candlesProvider = 'alpha-vantage';
           try {
             const interval = resolution === '5' ? '5min' : resolution === '60' ? '60min' : 'daily';
             const func = interval.includes('min') ? 'TIME_SERIES_INTRADAY' : 'TIME_SERIES_DAILY';
@@ -82,11 +79,10 @@ module.exports = async (req, res) => {
               });
             }
           } catch (avError) {
-            // Continue to Finnhub fallback, but preserve diagnostics if fallback fails too.
+            // Continue to next fallback provider.
             console.error('Alpha Vantage candles fallback error:', avError.message);
           }
         }
-        candlesProvider = 'yahoo';
         try {
           const fromTs = parseInt(from, 10);
           const toTs = parseInt(to, 10);
@@ -137,7 +133,6 @@ module.exports = async (req, res) => {
         } catch (yahooError) {
           console.error('Yahoo candles fallback error:', yahooError.message);
         }
-        candlesProvider = 'finnhub';
         response = await axios.get(`${BASE_URL}/stock/candle`, {
           params: { symbol, resolution, from, to, token: FINNHUB_API_KEY }
         });
@@ -184,27 +179,10 @@ module.exports = async (req, res) => {
     res.status(200).json({ data: response.data });
   } catch (error) {
     console.error('Stocks API error:', error.message);
-    const isCandlesRequest = req.query?.action === 'candles';
-    const errorPayload = {
+    res.status(error.response?.status || 500).json({
       error: error.message,
       details: error.response?.data
-    };
-
-    if (isCandlesRequest) {
-      errorPayload.debug = {
-        providerAttempted: ALPHAVANTAGE_API_KEY ? 'alpha-vantage-then-yahoo-then-finnhub' : 'yahoo-then-finnhub',
-        lastProvider: candlesProvider,
-        upstreamStatus: error.response?.status || null,
-        request: {
-          symbol: req.query?.symbol,
-          resolution: req.query?.resolution,
-          from: req.query?.from,
-          to: req.query?.to
-        }
-      };
-    }
-
-    res.status(error.response?.status || 500).json(errorPayload);
+    });
   }
 };
 
