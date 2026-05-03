@@ -3,6 +3,19 @@ const axios = require('axios');
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 const ALPHAVANTAGE_API_KEY = process.env.ALPHAVANTAGE_API_KEY;
 const BASE_URL = 'https://finnhub.io/api/v1';
+const YAHOO_CHART_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
+
+function formatCandles(candles) {
+  return {
+    s: 'ok',
+    t: candles.map(c => c.t),
+    o: candles.map(c => c.o),
+    h: candles.map(c => c.h),
+    l: candles.map(c => c.l),
+    c: candles.map(c => c.c),
+    v: candles.map(c => c.v)
+  };
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,21 +78,64 @@ module.exports = async (req, res) => {
                 .sort((a, b) => a.t - b.t);
 
               return res.status(200).json({
-                data: {
-                  s: 'ok',
-                  t: candles.map(c => c.t),
-                  o: candles.map(c => c.o),
-                  h: candles.map(c => c.h),
-                  l: candles.map(c => c.l),
-                  c: candles.map(c => c.c),
-                  v: candles.map(c => c.v)
-                }
+                data: formatCandles(candles)
               });
             }
           } catch (avError) {
             // Continue to Finnhub fallback, but preserve diagnostics if fallback fails too.
             console.error('Alpha Vantage candles fallback error:', avError.message);
           }
+        }
+        candlesProvider = 'yahoo';
+        try {
+          const fromTs = parseInt(from, 10);
+          const toTs = parseInt(to, 10);
+          const intervalMap = { '5': '5m', '60': '60m', D: '1d', W: '1wk' };
+          const interval = intervalMap[resolution] || '5m';
+          const safePeriod1 = Number.isFinite(fromTs) ? fromTs : Math.floor(Date.now() / 1000) - 86400;
+          const safePeriod2 = Number.isFinite(toTs) ? toTs : Math.floor(Date.now() / 1000);
+
+          const yahooResponse = await axios.get(`${YAHOO_CHART_URL}/${symbol}`, {
+            params: {
+              interval,
+              period1: safePeriod1,
+              period2: safePeriod2,
+              events: 'history',
+              includePrePost: false
+            },
+            headers: {
+              'User-Agent': 'Mozilla/5.0'
+            }
+          });
+
+          const result = yahooResponse.data?.chart?.result?.[0];
+          const quote = result?.indicators?.quote?.[0];
+          const timestamps = result?.timestamp || [];
+
+          if (quote && timestamps.length) {
+            const candles = timestamps
+              .map((ts, idx) => ({
+                t: ts,
+                o: quote.open?.[idx],
+                h: quote.high?.[idx],
+                l: quote.low?.[idx],
+                c: quote.close?.[idx],
+                v: quote.volume?.[idx] || 0
+              }))
+              .filter(candle =>
+                Number.isFinite(candle.t) &&
+                Number.isFinite(candle.o) &&
+                Number.isFinite(candle.h) &&
+                Number.isFinite(candle.l) &&
+                Number.isFinite(candle.c)
+              );
+
+            if (candles.length) {
+              return res.status(200).json({ data: formatCandles(candles) });
+            }
+          }
+        } catch (yahooError) {
+          console.error('Yahoo candles fallback error:', yahooError.message);
         }
         candlesProvider = 'finnhub';
         response = await axios.get(`${BASE_URL}/stock/candle`, {
@@ -136,7 +192,8 @@ module.exports = async (req, res) => {
 
     if (isCandlesRequest) {
       errorPayload.debug = {
-        providerAttempted: ALPHAVANTAGE_API_KEY ? 'alpha-vantage-then-finnhub' : 'finnhub-only',
+        providerAttempted: ALPHAVANTAGE_API_KEY ? 'alpha-vantage-then-yahoo-then-finnhub' : 'yahoo-then-finnhub',
+        lastProvider: candlesProvider,
         upstreamStatus: error.response?.status || null,
         request: {
           symbol: req.query?.symbol,
