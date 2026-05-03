@@ -17,6 +17,7 @@ module.exports = async (req, res) => {
 
   try {
     let response;
+    let candlesProvider = null;
 
     switch (action) {
       case 'quote':
@@ -33,48 +34,54 @@ module.exports = async (req, res) => {
 
       case 'candles':
         if (ALPHAVANTAGE_API_KEY) {
-          const interval = resolution === '5' ? '5min' : resolution === '60' ? '60min' : 'daily';
-          const func = interval.includes('min') ? 'TIME_SERIES_INTRADAY' : 'TIME_SERIES_DAILY';
-          
-          const avResponse = await axios.get('https://www.alphavantage.co/query', {
-            params: {
-              function: func,
-              symbol,
-              interval: interval.includes('min') ? interval : undefined,
-              outputsize: 'full',
-              apikey: ALPHAVANTAGE_API_KEY
-            }
-          });
+          candlesProvider = 'alpha-vantage';
+          try {
+            const interval = resolution === '5' ? '5min' : resolution === '60' ? '60min' : 'daily';
+            const func = interval.includes('min') ? 'TIME_SERIES_INTRADAY' : 'TIME_SERIES_DAILY';
 
-          const timeSeriesKey = Object.keys(avResponse.data).find(key => key.includes('Time Series'));
-          const timeSeries = avResponse.data[timeSeriesKey];
-          
-          if (timeSeries) {
-            const candles = Object.entries(timeSeries)
-              .map(([time, data]) => ({
-                t: new Date(time).getTime() / 1000,
-                o: parseFloat(data['1. open']),
-                h: parseFloat(data['2. high']),
-                l: parseFloat(data['3. low']),
-                c: parseFloat(data['4. close']),
-                v: parseInt(data['5. volume'])
-              }))
-              .sort((a, b) => a.t - b.t);
-
-            return res.status(200).json({
-              data: {
-                s: 'ok',
-                t: candles.map(c => c.t),
-                o: candles.map(c => c.o),
-                h: candles.map(c => c.h),
-                l: candles.map(c => c.l),
-                c: candles.map(c => c.c),
-                v: candles.map(c => c.v)
+            const avResponse = await axios.get('https://www.alphavantage.co/query', {
+              params: {
+                function: func,
+                symbol,
+                interval: interval.includes('min') ? interval : undefined,
+                outputsize: 'full',
+                apikey: ALPHAVANTAGE_API_KEY
               }
             });
+
+            const timeSeriesKey = Object.keys(avResponse.data).find(key => key.includes('Time Series'));
+            const timeSeries = avResponse.data[timeSeriesKey];
+
+            if (timeSeries) {
+              const candles = Object.entries(timeSeries)
+                .map(([time, data]) => ({
+                  t: new Date(time).getTime() / 1000,
+                  o: parseFloat(data['1. open']),
+                  h: parseFloat(data['2. high']),
+                  l: parseFloat(data['3. low']),
+                  c: parseFloat(data['4. close']),
+                  v: parseInt(data['5. volume'])
+                }))
+                .sort((a, b) => a.t - b.t);
+
+              return res.status(200).json({
+                data: {
+                  s: 'ok',
+                  t: candles.map(c => c.t),
+                  o: candles.map(c => c.o),
+                  h: candles.map(c => c.h),
+                  l: candles.map(c => c.l),
+                  c: candles.map(c => c.c),
+                  v: candles.map(c => c.v)
+                }
+              });
+            }
+          } catch (avError) {
+            // Continue to Finnhub fallback, but preserve diagnostics if fallback fails too.
+            console.error('Alpha Vantage candles fallback error:', avError.message);
           }
         }
-        
+        candlesProvider = 'finnhub';
         response = await axios.get(`${BASE_URL}/stock/candle`, {
           params: { symbol, resolution, from, to, token: FINNHUB_API_KEY }
         });
@@ -121,10 +128,26 @@ module.exports = async (req, res) => {
     res.status(200).json({ data: response.data });
   } catch (error) {
     console.error('Stocks API error:', error.message);
-    res.status(error.response?.status || 500).json({
+    const isCandlesRequest = req.query?.action === 'candles';
+    const errorPayload = {
       error: error.message,
       details: error.response?.data
-    });
+    };
+
+    if (isCandlesRequest) {
+      errorPayload.debug = {
+        providerAttempted: ALPHAVANTAGE_API_KEY ? 'alpha-vantage-then-finnhub' : 'finnhub-only',
+        upstreamStatus: error.response?.status || null,
+        request: {
+          symbol: req.query?.symbol,
+          resolution: req.query?.resolution,
+          from: req.query?.from,
+          to: req.query?.to
+        }
+      };
+    }
+
+    res.status(error.response?.status || 500).json(errorPayload);
   }
 };
 
