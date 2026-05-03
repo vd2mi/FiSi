@@ -3,7 +3,7 @@ import { createChart, CandlestickSeries, HistogramSeries } from 'lightweight-cha
 import { stocksAPI } from '../services/api';
 
 const StockChart = React.memo(({ symbol }) => {
-  const [timeframe, setTimeframe] = useState('1D');
+  const [timeframe, setTimeframe] = useState('3M');
   const [loading, setLoading] = useState(false);
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
